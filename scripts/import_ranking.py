@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 # ============================================================================
 
 # アフィリエイトID（ここにあなたのAmazonアソシエイトIDを記入してください）
-ASSOCIATE_TAG = "YOUR_ID_HERE"
+ASSOCIATE_TAG = "xiora-22"
 
 # プロジェクトルートのパスを取得
 PROJECT_ROOT = Path(__file__).parent.parent
