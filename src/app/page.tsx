@@ -66,7 +66,7 @@ function guessCategory(product: Product): string | null {
 }
 
 /**
- * メインページ（ダッシュボード形式）
+ * メインページ（ECメディア風）
  */
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -84,51 +84,69 @@ export default function Home() {
       ? products
       : products.filter((product) => guessCategory(product) === selectedCategory);
 
-  // 価格が下がった商品数を計算
-  const priceDrops = products.filter((product) => {
-    const history = product.priceHistory || [];
-    if (history.length < 2) return false;
-    const latest = history[history.length - 1].price;
-    const prev = history[history.length - 2].price;
-    return latest < prev;
-  }).length;
+  // 価格が下がった商品を取得（特集用）
+  const featuredProducts = products
+    .filter((product) => {
+      const history = product.priceHistory || [];
+      if (history.length < 2) return false;
+      const latest = history[history.length - 1].price;
+      const prev = history[history.length - 2].price;
+      return latest < prev;
+    })
+    .slice(0, 6);
 
   return (
     <>
       <Header />
-      <main className="p-6 max-w-[1600px] mx-auto w-full">
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="p-4 bg-surface border border-border rounded-lg">
-            <div className="text-xs text-text-muted mb-1">Total Monitored</div>
-            <div className="text-2xl font-bold text-text-main font-mono">{products.length}</div>
-          </div>
-          <div className="p-4 bg-surface border border-border rounded-lg">
-            <div className="text-xs text-text-muted mb-1">Price Drops (24h)</div>
-            <div className="text-2xl font-bold text-green-500 font-mono">{priceDrops}</div>
-          </div>
-          <div className="p-4 bg-surface border border-border rounded-lg">
-            <div className="text-xs text-text-muted mb-1">System Status</div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-              </span>
-              <span className="text-sm text-text-main">Operational</span>
+      <main className="min-h-screen">
+        {/* ヒーローセクション（特集エリア） */}
+        {selectedCategory === "all" && featuredProducts.length > 0 && (
+          <section className="bg-gradient-to-r from-primary/10 to-accent/10 py-12 border-b border-border">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold text-text-main mb-2">
+                    本日の目玉商品
+                  </h2>
+                  <p className="text-text-muted">
+                    価格が下がったお得な商品をピックアップ
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {featuredProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
             </div>
+          </section>
+        )}
+
+        {/* 商品一覧 */}
+        <section className="py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-text-main">
+                {selectedCategory === "all" ? "すべての商品" : "商品一覧"}
+              </h2>
+              <span className="text-sm text-text-muted">
+                {filteredProducts.length}件の商品
+              </span>
+            </div>
+
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-text-muted text-lg">商品が見つかりませんでした</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                {filteredProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text-main">All Products</h2>
-          <div className="text-xs text-text-dim">Real-time data</div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {filteredProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        </section>
       </main>
     </>
   );

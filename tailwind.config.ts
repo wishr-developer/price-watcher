@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,21 +8,23 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ["Inter", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
-      },
       colors: {
-        background: "#09090b", // Zinc-950
-        surface: "#18181b", // Zinc-900
-        surfaceHighlight: "#27272a", // Zinc-800
-        border: "#27272a", // Zinc-800 (境界線)
-        primary: "#3b82f6", // Blue-500
+        background: "#FFFFFF",
+        surface: "#F8F9FA",
+        border: "#E5E7EB",
+        primary: "#FF9900", // Amazonオレンジ
+        accent: "#FF6B35", // アクセントオレンジ
         text: {
-          main: "#fafafa", // Zinc-50
-          muted: "#a1a1aa", // Zinc-400
-          dim: "#52525b", // Zinc-600
+          main: "#1F2937", // 濃いグレー
+          muted: "#6B7280", // ミディアムグレー
+          dim: "#9CA3AF", // 薄いグレー
         },
+        success: "#10B981", // 緑（価格下落）
+        danger: "#EF4444", // 赤（価格上昇）
+      },
+      boxShadow: {
+        card: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+        "card-hover": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
       },
     },
   },

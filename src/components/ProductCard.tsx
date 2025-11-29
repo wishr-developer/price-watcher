@@ -1,14 +1,13 @@
 "use client";
 
 import { Product } from "@/types/product";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
 
 interface ProductCardProps {
   product: Product;
 }
 
 /**
- * 商品カードコンポーネント（データパネル風 - プロフェッショナルなSaaS管理画面）
+ * 商品カードコンポーネント（ECサイト風）
  */
 export default function ProductCard({ product }: ProductCardProps) {
   const history = product.priceHistory || [];
@@ -22,106 +21,94 @@ export default function ProductCard({ product }: ProductCardProps) {
   if (diff < 0) status = "drop";
   if (diff > 0) status = "rise";
 
-  const chartColor =
-    status === "drop" ? "#10b981" : status === "rise" ? "#ef4444" : "#52525b"; // 緑=安くなった(良), 赤=高くなった(悪)
-  const chartData =
-    history.length > 0
-      ? history.map((h) => ({ p: h.price }))
-      : Array(10)
-          .fill(0)
-          .map(() => ({ p: latest }));
+  // 割引率を計算（価格が下がった場合）
+  const discountPercent = status === "drop" ? Math.abs(Number(percent)) : 0;
 
   return (
-    <div className="group bg-surface border border-border rounded-lg p-4 hover:border-text-dim transition-colors flex flex-col h-full">
-      <div className="flex gap-4 mb-3">
-        <div className="w-12 h-12 bg-white rounded-md p-1 flex-shrink-0 border border-border overflow-hidden">
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="w-full h-full object-contain mix-blend-multiply"
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-text-main leading-tight line-clamp-2 mb-1 group-hover:text-primary transition-colors">
-            {product.name}
-          </h3>
-          <div className="text-xs text-text-dim font-mono">
-            {product.id ? `ID: ${product.id}` : "ASIN: ---"}
+    <div className="group bg-white rounded-lg shadow-card hover:shadow-card-hover transition-all duration-200 overflow-hidden border border-border hover:border-primary/30 flex flex-col h-full">
+      {/* 商品画像（大きく表示 - aspect-square） */}
+      <div className="w-full aspect-square bg-surface flex items-center justify-center p-4 relative overflow-hidden">
+        <img
+          src={product.imageUrl}
+          alt={product.name}
+          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+        />
+        {/* 割引バッジ */}
+        {status === "drop" && discountPercent > 0 && (
+          <div className="absolute top-2 right-2 bg-danger text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+            {discountPercent}% OFF
           </div>
-        </div>
+        )}
+        {/* 最安値バッジ */}
+        {status === "drop" && discountPercent > 5 && (
+          <div className="absolute top-2 left-2 bg-success text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+            最安値
+          </div>
+        )}
       </div>
 
-      <div className="mt-auto">
-        <div className="flex items-end justify-between mb-2">
-          <div>
-            <div className="text-lg font-bold text-text-main font-mono tracking-tight">
+      {/* 商品情報 */}
+      <div className="p-4 flex flex-col flex-1">
+        {/* 商品名 */}
+        <h3 className="text-sm font-medium text-text-main leading-tight line-clamp-2 mb-3 min-h-[2.5rem] group-hover:text-primary transition-colors">
+          {product.name}
+        </h3>
+
+        {/* 価格（大きく強調） */}
+        <div className="mb-3">
+          <div className="flex items-baseline gap-2 mb-1">
+            <span className="text-2xl font-bold text-text-main">
               ¥{latest.toLocaleString()}
-            </div>
-            {status !== "stable" && (
-              <div
-                className={`text-xs font-medium flex items-center gap-1 ${
-                  status === "drop" ? "text-green-500" : "text-red-500"
-                }`}
-              >
-                {status === "drop" ? (
-                  <svg width={12} height={12} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
-                    />
-                  </svg>
-                ) : (
-                  <svg width={12} height={12} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                    />
-                  </svg>
-                )}
-                <span>
-                  {Math.abs(diff).toLocaleString()} ({Math.abs(Number(percent))}%)
-                </span>
-              </div>
-            )}
-            {status === "stable" && (
-              <div className="text-xs text-text-dim flex items-center gap-1">
-                <svg width={12} height={12} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                </svg>
-                No change
-              </div>
+            </span>
+            {status === "drop" && (
+              <span className="text-sm text-text-dim line-through">
+                ¥{prev.toLocaleString()}
+              </span>
             )}
           </div>
-          <div className="w-20 h-8">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <Line
-                  type="monotone"
-                  dataKey="p"
-                  stroke={chartColor}
-                  strokeWidth={1.5}
-                  dot={false}
+          {status === "drop" && (
+            <div className="text-xs text-success font-medium flex items-center gap-1">
+              <svg width={12} height={12} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
                 />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+              </svg>
+              <span>
+                {Math.abs(diff).toLocaleString()}円安 ({Math.abs(Number(percent))}%)
+              </span>
+            </div>
+          )}
+          {status === "rise" && (
+            <div className="text-xs text-danger font-medium flex items-center gap-1">
+              <svg width={12} height={12} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
+              </svg>
+              <span>
+                {Math.abs(diff).toLocaleString()}円高 ({Math.abs(Number(percent))}%)
+              </span>
+            </div>
+          )}
         </div>
 
+        {/* Amazonで見るボタン（オレンジ、幅100%） */}
         <a
           href={product.affiliateUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center w-full h-8 rounded border border-border bg-transparent text-xs font-medium text-text-muted hover:bg-surfaceHighlight hover:text-text-main transition-colors"
+          className="mt-auto w-full bg-primary hover:bg-accent text-white text-center font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
         >
-          View on Amazon
+          <span>Amazonで見る</span>
           <svg
-            width={12}
-            height={12}
-            className="ml-1.5 opacity-50"
+            width={16}
+            height={16}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

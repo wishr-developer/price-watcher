@@ -8,16 +8,16 @@
   }
 }
 
-/* 繊細なスクロールバー */
+/* スクロールバー */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  @apply bg-surface;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-surfaceHighlight rounded-full;
+  @apply bg-border rounded-full;
 }
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-text-dim;
