@@ -21,6 +21,17 @@ const config: Config = {
         text: {
           main: "#111827", // ほぼ黒
           muted: "#6b7280", // グレー
+        },
+        // Deal Score用グラデーション
+        score: {
+          s: {
+            from: "#a855f7", // 紫
+            to: "#ec4899", // ピンク
+          },
+          a: {
+            from: "#3b82f6", // 青
+            to: "#06b6d4", // シアン
+          },
         }
       },
       boxShadow: {
