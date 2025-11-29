@@ -2,8 +2,23 @@
 
 import { Search, ShoppingBag, Menu } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 
-export default function Header() {
+interface HeaderProps {
+  onSearch?: (query: string) => void;
+}
+
+export default function Header({ onSearch }: HeaderProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (onSearch) {
+      onSearch(value);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -18,6 +33,8 @@ export default function Header() {
           <input 
             type="text" 
             placeholder="何をお探しですか？（例: MacBook, スニーカー...）" 
+            value={searchQuery}
+            onChange={handleSearchChange}
             className="w-full h-10 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
           <button className="absolute right-3 top-2.5 text-gray-400 hover:text-blue-600">

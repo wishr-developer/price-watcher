@@ -33,6 +33,17 @@ function calculateDealScore(product: Product): number {
 }
 
 /**
+ * 過去最安値を取得する関数
+ */
+function getLowestPrice(product: Product): number | null {
+  const history = product.priceHistory || [];
+  if (history.length === 0) return null;
+  
+  const prices = history.map(h => h.price);
+  return Math.min(...prices, product.currentPrice);
+}
+
+/**
  * スコアからランクとラベルを取得
  */
 function getScoreRank(score: number): { rank: 'S' | 'A' | 'B', label: string, color: string } {
@@ -156,6 +167,10 @@ export default function ProductCard({ product, rank }: ProductCardProps) {
   const dealScore = calculateDealScore(product);
   const scoreRank = getScoreRank(dealScore);
   
+  // 過去最安値を取得
+  const lowestPrice = getLowestPrice(product);
+  const isLowestPrice = lowestPrice !== null && latest === lowestPrice;
+  
   // スコア表示の条件判定
   const showScore = dealScore > 0 && isCheaper;
   const showNewBadge = !hasEnoughData || (!isCheaper && dealScore === 0);
@@ -168,6 +183,14 @@ export default function ProductCard({ product, rank }: ProductCardProps) {
         <div className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md">
           <Crown size={10} />
           <span>No.{rank}</span>
+        </div>
+      )}
+
+      {/* 過去最安バッジ（現在価格が過去最安値の場合） */}
+      {isLowestPrice && !rank && (
+        <div className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md">
+          <span>🏆</span>
+          <span>過去最安</span>
         </div>
       )}
 
@@ -199,7 +222,7 @@ export default function ProductCard({ product, rank }: ProductCardProps) {
       )}
       
       {/* 割引バッジ（安くなっている時だけ表示、ランキングバッジと重複しないように） */}
-      {isCheaper && !rank && (
+      {isCheaper && !rank && !isLowestPrice && (
         <div className="absolute top-3 left-3 z-10 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
           {percent}% OFF
         </div>
@@ -230,6 +253,13 @@ export default function ProductCard({ product, rank }: ProductCardProps) {
               <span className="text-xs text-gray-400 line-through">¥{prev.toLocaleString()}</span>
             )}
           </div>
+          
+          {/* 過去最安値の表示 */}
+          {lowestPrice !== null && !isLowestPrice && (
+            <div className="text-xs text-gray-500 mb-2">
+              過去最安: ¥{lowestPrice.toLocaleString()}
+            </div>
+          )}
           
           {/* 価格変動ステータス */}
           <div className="flex items-center gap-1 mb-3">
