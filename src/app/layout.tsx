@@ -1,5 +1,4 @@
 import "./globals.css";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { CategoryProvider } from "@/contexts/CategoryContext";
 
@@ -8,7 +7,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja">
       <body className="flex flex-col min-h-screen bg-white text-slate-900">
         <CategoryProvider>
-          <Header />
           <main className="flex-1">
             {children}
           </main>
