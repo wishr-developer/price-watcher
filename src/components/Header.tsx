@@ -23,9 +23,9 @@ export default function Header({ onSearch }: HeaderProps) {
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* ロゴ */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">X</div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">XIORA</span>
+        <Link href="/" className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold tracking-tight text-slate-900">XIORA</span>
+          <span className="text-xl font-light text-slate-500 ml-1">TREND</span>
         </Link>
 
         {/* 検索バー（PCでは中央、スマホでは非表示等の制御も可だが今回はシンプルに） */}
