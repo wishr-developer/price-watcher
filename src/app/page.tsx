@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import { Product } from '@/types/product';
-import { Crown, ArrowUpDown } from 'lucide-react';
+import { Crown, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 /**
- * Deal Scoreを計算する関数（ProductCardと同じロジック）
+ * Deal Scoreを計算する関数
  */
 function calculateDealScore(product: Product): number {
   const history = product.priceHistory || [];
@@ -46,8 +46,9 @@ type SortOption = 'recommended' | 'discount' | 'price' | 'newest';
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState<SortOption>('recommended');
+  const [sortOption, setSortOption] = useState<SortOption>('newest'); // デフォルトを新着順に
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [trendScrollIndex, setTrendScrollIndex] = useState(0);
   
   useEffect(() => { 
     fetch('/api/products')
@@ -69,8 +70,7 @@ export default function Home() {
         const isMatch = name.includes(query);
         if (!isMatch) return false;
 
-        // 🚫 除外ロジック（ここを追加！）
-        // 「Apple」検索時に、「香り」「トリートメント」「シャンプー」などが含まれていたら除外
+        // 🚫 除外ロジック
         if (query === 'apple' || query === 'アップル') {
           if (name.includes('香り') || name.includes('トリートメント') || name.includes('ヘア') || name.includes('ボディ') || name.includes('シャンプー')) {
             return false;
@@ -123,13 +123,15 @@ export default function Home() {
     return result;
   }, [products, searchQuery, sortOption]);
 
-  // ソート済みの商品リスト（後方互換性のため）
-  const sortedProducts = filteredProducts;
-
-  // ベストバイ商品（スコアが最も高い商品）
-  const bestDeal = sortedProducts.length > 0 && calculateDealScore(sortedProducts[0]) > 0 
-    ? sortedProducts[0] 
-    : null;
+  // トレンドTOP3（スコア順）
+  const trendProducts = useMemo(() => {
+    const sorted = [...products].sort((a, b) => {
+      const scoreA = calculateDealScore(a);
+      const scoreB = calculateDealScore(b);
+      return scoreB - scoreA;
+    });
+    return sorted.filter(p => calculateDealScore(p) > 0).slice(0, 3);
+  }, [products]);
 
   const sortLabels: Record<SortOption, string> = {
     recommended: 'おすすめ順',
@@ -142,159 +144,128 @@ export default function Home() {
     <>
       <Header onSearch={setSearchQuery} />
       <div className="pb-20">
-        {/* ヒーローセクション（アイキャッチ） */}
-        <section className="relative bg-surface border-b border-border py-20 px-4 mb-10 overflow-hidden">
-          {/* 背景グラデーション（ぼかし円） */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl opacity-60 animate-pulse"></div>
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl opacity-60 animate-pulse" style={{ animationDelay: '1s' }}></div>
+        {/* Liveヘッダー */}
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-red-200 py-3 px-4">
+          <div className="container mx-auto max-w-4xl flex items-center justify-center gap-3">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+            </span>
+            <span className="text-sm font-bold text-gray-900">Xiora Live Market</span>
+            <span className="text-xs text-gray-600">現在 {products.length}商品をリアルタイム監視中</span>
           </div>
-          
-          <div className="container mx-auto max-w-5xl text-center relative z-10">
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight leading-tight">
-              買い時の商品が、<br className="md:hidden" />
-              <span className="text-blue-600">一瞬でわかる。</span>
-            </h1>
-            <p className="text-gray-600 mb-10 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
-              Amazonの価格変動を24時間365日監視。
-              <br />
-              <span className="font-medium">今、本当に安くなっている商品だけを厳選して表示します。</span>
-            </p>
-            <div className="flex justify-center gap-2 text-sm font-medium overflow-x-auto pb-2">
-              {['Apple', 'Anker', 'Sony', 'Nintendo', '食品', '日用品'].map(tag => (
-                <button 
-                  key={tag} 
-                  onClick={() => setSearchQuery(tag)}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-full hover:border-blue-500 hover:text-blue-600 transition-colors whitespace-nowrap shadow-sm hover:shadow-md"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
+        </div>
 
-        {/* 本日のベストバイセクション */}
-        {bestDeal && (
-          <section className="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-b border-border py-12 px-4 mb-10">
-          <div className="container mx-auto max-w-7xl">
-            <div className="flex items-center gap-2 mb-6">
-              <Crown className="w-6 h-6 text-yellow-500" />
-              <h2 className="text-2xl font-bold text-slate-900">本日のベストバイ</h2>
-              <span className="text-sm text-gray-500">Today's Best Deal</span>
-            </div>
-            <div className="bg-white rounded-3xl p-6 shadow-soft border border-gray-100">
-              <div className="grid md:grid-cols-2 gap-6 items-center">
-                {/* 画像 */}
-                <div className="aspect-square bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden">
-                  <img 
-                    src={bestDeal.imageUrl} 
-                    alt={bestDeal.name} 
-                    className="w-full h-full object-contain mix-blend-multiply p-8" 
-                  />
-                </div>
-                {/* 情報 */}
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full mb-3">
-                      <Crown size={12} />
-                      <span>AI Deal Score: {calculateDealScore(bestDeal)}/100</span>
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-3 leading-tight">
-                      {bestDeal.name}
-                    </h3>
-                    <div className="flex items-baseline gap-3 mb-2">
-                      <span className="text-4xl font-bold text-slate-900">
-                        ¥{bestDeal.currentPrice.toLocaleString()}
-                      </span>
-                      {bestDeal.priceHistory.length >= 2 && (
-                        <span className="text-lg text-gray-400 line-through">
-                          ¥{bestDeal.priceHistory[bestDeal.priceHistory.length - 2].price.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-red-600 font-semibold mb-4">
-                      {bestDeal.priceHistory.length >= 2 && (
-                        <>
-                          ¥{Math.abs(bestDeal.currentPrice - bestDeal.priceHistory[bestDeal.priceHistory.length - 2].price).toLocaleString()} 値下がり
-                        </>
-                      )}
-                    </div>
+        {/* 本日のトレンド（TOP3カルーセル） */}
+        {trendProducts.length > 0 && !searchQuery && (
+          <section className="bg-white border-b border-gray-200 py-6 px-4">
+            <div className="container mx-auto max-w-4xl">
+              <div className="flex items-center gap-2 mb-4">
+                <Crown className="w-5 h-5 text-yellow-500" />
+                <h2 className="text-lg font-bold text-slate-900">本日のトレンド</h2>
+              </div>
+              <div className="relative">
+                <div className="overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-4 pb-2">
+                    {trendProducts.map((product, index) => (
+                      <a
+                        key={product.id}
+                        href={product.affiliateUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 w-64 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Crown size={14} className="text-yellow-500" />
+                          <span className="text-xs font-bold text-purple-600">No.{index + 1}</span>
+                        </div>
+                        <div className="text-sm font-bold text-gray-900 line-clamp-2 mb-2">
+                          {product.name}
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-bold text-gray-900">
+                            ¥{product.currentPrice.toLocaleString()}
+                          </span>
+                          {product.priceHistory.length >= 2 && (
+                            <span className="text-xs text-gray-400 line-through">
+                              ¥{product.priceHistory[product.priceHistory.length - 2].price.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-red-600 font-semibold mt-1">
+                          AI Deal Score: {calculateDealScore(product)}/100
+                        </div>
+                      </a>
+                    ))}
                   </div>
-                  <a
-                    href={bestDeal.affiliateUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg text-center"
-                  >
-                    Amazonで詳細を見る →
-                  </a>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
         )}
 
-        {/* 商品グリッド */}
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-bold text-slate-900">
-                {searchQuery ? `「${searchQuery}」の検索結果` : '注目の値下がり商品'}
-              </h2>
-              <span className="text-sm text-gray-500">
-                {sortedProducts.length}件{searchQuery && ` / 全${products.length}件`}
-              </span>
+        {/* タイムライン（1カラム表示） */}
+        <div className="container mx-auto max-w-4xl px-4">
+          {searchQuery && (
+            <div className="py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    「{searchQuery}」の検索結果
+                  </h2>
+                  <span className="text-sm text-gray-500">
+                    {filteredProducts.length}件 / 全{products.length}件
+                  </span>
+                </div>
+                
+                {/* 並び替えボタン */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSortMenu(!showSortMenu)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-colors text-sm font-medium"
+                  >
+                    <ArrowUpDown size={16} />
+                    <span>{sortLabels[sortOption]}</span>
+                  </button>
+                  
+                  {showSortMenu && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setShowSortMenu(false)}
+                      ></div>
+                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                        {Object.entries(sortLabels).map(([key, label]) => (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              setSortOption(key as SortOption);
+                              setShowSortMenu(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                              sortOption === key ? 'text-blue-600 font-semibold bg-blue-50' : 'text-gray-700'
+                            } ${key !== 'recommended' ? 'border-t border-gray-100' : ''}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-            
-            {/* 並び替えボタン */}
-            <div className="relative">
-              <button
-                onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-colors text-sm font-medium"
-              >
-                <ArrowUpDown size={16} />
-                <span>{sortLabels[sortOption]}</span>
-              </button>
-              
-              {/* 並び替えメニュー */}
-              {showSortMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setShowSortMenu(false)}
-                  ></div>
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                    {Object.entries(sortLabels).map(([key, label]) => (
-                      <button
-                        key={key}
-                        onClick={() => {
-                          setSortOption(key as SortOption);
-                          setShowSortMenu(false);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                          sortOption === key ? 'text-blue-600 font-semibold bg-blue-50' : 'text-gray-700'
-                        } ${key !== 'recommended' ? 'border-t border-gray-100' : ''}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          )}
           
-          {sortedProducts.length === 0 ? (
+          {filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-gray-500 text-lg mb-2">商品が見つかりませんでした</p>
               <p className="text-gray-400 text-sm">検索条件を変更してお試しください</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-              {sortedProducts.map((p, index) => (
-                <ProductCard key={p.id} product={p} rank={index + 1} />
+            <div className="flex flex-col">
+              {filteredProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
           )}
