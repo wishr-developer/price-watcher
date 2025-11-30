@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import { Product } from '@/types/product';
-import { Crown, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Crown } from 'lucide-react';
 
 /**
  * Deal Scoreを計算する関数
@@ -25,30 +25,12 @@ function calculateDealScore(product: Product): number {
   return Math.round(score);
 }
 
-/**
- * 割引率を計算する関数
- */
-function calculateDiscountPercent(product: Product): number {
-  const history = product.priceHistory || [];
-  if (history.length < 2) return 0;
-
-  const latest = product.currentPrice;
-  const prev = history[history.length - 2].price;
-  const diff = latest - prev;
-  
-  if (diff >= 0) return 0;
-  
-  return prev > 0 ? Math.round((Math.abs(diff) / prev) * 100) : 0;
-}
-
-type SortOption = 'recommended' | 'discount' | 'price' | 'newest';
+type TabType = 'drops' | 'new' | 'ranking' | 'all';
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState<SortOption>('newest'); // デフォルトを新着順に
-  const [showSortMenu, setShowSortMenu] = useState(false);
-  const [trendScrollIndex, setTrendScrollIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>('all');
   
   useEffect(() => { 
     fetch('/api/products')
@@ -56,21 +38,18 @@ export default function Home() {
       .then(setProducts); 
   }, []);
 
-  // 検索・ソート・フィルタリングロジック
+  // タブに応じたフィルタリング
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // 1. 検索フィルター（賢いバージョン）
+    // 検索フィルター
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter((p: Product) => {
         const name = p.name.toLowerCase();
-        
-        // 基本的な一致チェック
         const isMatch = name.includes(query);
         if (!isMatch) return false;
 
-        // 🚫 除外ロジック
         if (query === 'apple' || query === 'アップル') {
           if (name.includes('香り') || name.includes('トリートメント') || name.includes('ヘア') || name.includes('ボディ') || name.includes('シャンプー')) {
             return false;
@@ -81,10 +60,43 @@ export default function Home() {
       });
     }
 
-    // 2. ソート
-    switch (sortOption) {
-      case 'recommended':
-        // おすすめ順（スコア順）
+    // タブフィルター
+    switch (activeTab) {
+      case 'drops':
+        // 値下がり速報
+        result = result.filter((p: Product) => {
+          const history = p.priceHistory || [];
+          if (history.length < 2) return false;
+          const latest = p.currentPrice;
+          const prev = history[history.length - 2].price;
+          return latest < prev;
+        });
+        // 値下がり率が高い順にソート
+        result.sort((a, b) => {
+          const historyA = a.priceHistory || [];
+          const historyB = b.priceHistory || [];
+          if (historyA.length < 2 || historyB.length < 2) return 0;
+          const diffA = a.currentPrice - historyA[historyA.length - 2].price;
+          const diffB = b.currentPrice - historyB[historyB.length - 2].price;
+          return diffA - diffB; // より値下がりしている順
+        });
+        break;
+      
+      case 'new':
+        // 新着（登録が新しい順）
+        result.sort((a, b) => {
+          const dateA = a.priceHistory && a.priceHistory.length > 0 
+            ? new Date(a.priceHistory[a.priceHistory.length - 1].date).getTime() 
+            : 0;
+          const dateB = b.priceHistory && b.priceHistory.length > 0 
+            ? new Date(b.priceHistory[b.priceHistory.length - 1].date).getTime() 
+            : 0;
+          return dateB - dateA;
+        });
+        break;
+      
+      case 'ranking':
+        // ランキング（Deal Score順）
         result.sort((a, b) => {
           const scoreA = calculateDealScore(a);
           const scoreB = calculateDealScore(b);
@@ -92,22 +104,9 @@ export default function Home() {
         });
         break;
       
-      case 'discount':
-        // 割引率が高い順
-        result.sort((a, b) => {
-          const discountA = calculateDiscountPercent(a);
-          const discountB = calculateDiscountPercent(b);
-          return discountB - discountA;
-        });
-        break;
-      
-      case 'price':
-        // 価格が安い順
-        result.sort((a, b) => a.currentPrice - b.currentPrice);
-        break;
-      
-      case 'newest':
-        // 新着順（最新の価格履歴の日付順）
+      case 'all':
+      default:
+        // すべて（新着順）
         result.sort((a, b) => {
           const dateA = a.priceHistory && a.priceHistory.length > 0 
             ? new Date(a.priceHistory[a.priceHistory.length - 1].date).getTime() 
@@ -121,7 +120,7 @@ export default function Home() {
     }
 
     return result;
-  }, [products, searchQuery, sortOption]);
+  }, [products, searchQuery, activeTab]);
 
   // トレンドTOP3（スコア順）
   const trendProducts = useMemo(() => {
@@ -133,20 +132,20 @@ export default function Home() {
     return sorted.filter(p => calculateDealScore(p) > 0).slice(0, 3);
   }, [products]);
 
-  const sortLabels: Record<SortOption, string> = {
-    recommended: 'おすすめ順',
-    discount: '割引率が高い順',
-    price: '価格が安い順',
-    newest: '新着順',
-  };
+  const tabs: Array<{ id: TabType; label: string; emoji: string }> = [
+    { id: 'drops', label: '値下がり速報', emoji: '🔥' },
+    { id: 'new', label: '新着', emoji: '✨' },
+    { id: 'ranking', label: 'ランキング', emoji: '👑' },
+    { id: 'all', label: 'すべて', emoji: '' },
+  ];
 
   return (
     <>
       <Header onSearch={setSearchQuery} />
-      <div className="pb-20">
+      <div className="pb-20 bg-[#f8f9fa] min-h-screen">
         {/* Liveヘッダー */}
         <div className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-red-200 py-3 px-4">
-          <div className="container mx-auto max-w-4xl flex items-center justify-center gap-3">
+          <div className="container mx-auto max-w-7xl flex items-center justify-center gap-3">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
@@ -159,7 +158,7 @@ export default function Home() {
         {/* 本日のトレンド（TOP3カルーセル） */}
         {trendProducts.length > 0 && !searchQuery && (
           <section className="bg-white border-b border-gray-200 py-6 px-4">
-            <div className="container mx-auto max-w-4xl">
+            <div className="container mx-auto max-w-7xl">
               <div className="flex items-center gap-2 mb-4">
                 <Crown className="w-5 h-5 text-yellow-500" />
                 <h2 className="text-lg font-bold text-slate-900">本日のトレンド</h2>
@@ -204,56 +203,38 @@ export default function Home() {
           </section>
         )}
 
-        {/* タイムライン（1カラム表示） */}
-        <div className="container mx-auto max-w-4xl px-4">
+        {/* タブ切り替えUI */}
+        <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
+          <div className="container mx-auto max-w-7xl px-4">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide py-3">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  {tab.emoji && <span className="mr-1">{tab.emoji}</span>}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 商品グリッド */}
+        <div className="container mx-auto max-w-7xl px-4 py-6">
           {searchQuery && (
-            <div className="py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    「{searchQuery}」の検索結果
-                  </h2>
-                  <span className="text-sm text-gray-500">
-                    {filteredProducts.length}件 / 全{products.length}件
-                  </span>
-                </div>
-                
-                {/* 並び替えボタン */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowSortMenu(!showSortMenu)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:text-blue-600 transition-colors text-sm font-medium"
-                  >
-                    <ArrowUpDown size={16} />
-                    <span>{sortLabels[sortOption]}</span>
-                  </button>
-                  
-                  {showSortMenu && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-10" 
-                        onClick={() => setShowSortMenu(false)}
-                      ></div>
-                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                        {Object.entries(sortLabels).map(([key, label]) => (
-                          <button
-                            key={key}
-                            onClick={() => {
-                              setSortOption(key as SortOption);
-                              setShowSortMenu(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                              sortOption === key ? 'text-blue-600 font-semibold bg-blue-50' : 'text-gray-700'
-                            } ${key !== 'recommended' ? 'border-t border-gray-100' : ''}`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-slate-900 mb-1">
+                「{searchQuery}」の検索結果
+              </h2>
+              <span className="text-sm text-gray-500">
+                {filteredProducts.length}件 / 全{products.length}件
+              </span>
             </div>
           )}
           
@@ -263,7 +244,7 @@ export default function Home() {
               <p className="text-gray-400 text-sm">検索条件を変更してお試しください</p>
             </div>
           ) : (
-            <div className="flex flex-col">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {filteredProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}

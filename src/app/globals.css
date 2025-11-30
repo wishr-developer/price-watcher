@@ -3,10 +3,20 @@
 @tailwind utilities;
 
 body {
-  @apply bg-background text-text-main antialiased;
+  @apply bg-[#f8f9fa] text-text-main antialiased;
 }
 
 /* なめらかなスクロール */
 html {
   scroll-behavior: smooth;
+}
+
+/* スクロールバーを非表示（横スクロール用） */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

@@ -2,6 +2,7 @@
 
 import { ExternalLink, ArrowDownRight } from 'lucide-react';
 import { Product } from '@/types/product';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
 interface ProductCardProps {
   product: Product;
@@ -9,83 +10,62 @@ interface ProductCardProps {
 }
 
 /**
- * Deal Scoreを計算する関数
+ * カテゴリを推測する関数
  */
-function calculateDealScore(product: Product): number {
-  const history = product.priceHistory || [];
-  if (history.length < 2) return 0;
+function guessCategory(product: Product): string {
+  const name = product.name.toLowerCase();
+  if (name.includes("pc") || name.includes("パソコン") || name.includes("macbook") || name.includes("ipad") || name.includes("タブレット")) {
+    return "ガジェット";
+  }
+  if (name.includes("家電") || name.includes("イヤホン") || name.includes("ヘッドホン") || name.includes("充電") || name.includes("ケーブル")) {
+    return "家電";
+  }
+  if (name.includes("キッチン") || name.includes("フライパン") || name.includes("鍋") || name.includes("食器")) {
+    return "キッチン";
+  }
+  if (name.includes("ゲーム") || name.includes("switch") || name.includes("playstation") || name.includes("nintendo")) {
+    return "ゲーム";
+  }
+  if (name.includes("プロテイン") || name.includes("サプリ") || name.includes("健康") || name.includes("洗剤")) {
+    return "ヘルスケア";
+  }
+  if (name.includes("化粧") || name.includes("スキンケア") || name.includes("美容")) {
+    return "ビューティー";
+  }
+  if (name.includes("食品") || name.includes("飲料") || name.includes("お菓子")) {
+    return "食品";
+  }
+  if (name.includes("文房具") || name.includes("ペン") || name.includes("ノート")) {
+    return "文房具";
+  }
+  return "その他";
+}
 
+/**
+ * 価格推移データを準備
+ */
+function prepareChartData(product: Product): Array<{ price: number }> {
+  const history = product.priceHistory || [];
+  if (history.length === 0) {
+    return [{ price: product.currentPrice }];
+  }
+  return history.map(h => ({ price: h.price }));
+}
+
+/**
+ * グラフの色を決定
+ */
+function getChartColor(product: Product): string {
+  const history = product.priceHistory || [];
+  if (history.length < 2) return '#9ca3af'; // グレー
+  
   const latest = product.currentPrice;
   const prev = history[history.length - 2].price;
   const diff = latest - prev;
   
-  if (diff >= 0) return 0;
-  
-  const discountPercent = prev > 0 ? (Math.abs(diff) / prev) * 100 : 0;
-  const score = Math.min(discountPercent * 2, 100);
-  
-  return Math.round(score);
-}
-
-/**
- * AIコメントを生成する関数
- */
-function generateAIComment(product: Product): { text: string; color: string; emoji: string } {
-  const history = product.priceHistory || [];
-  const dealScore = calculateDealScore(product);
-  const hasEnoughData = history.length >= 2;
-  const latest = product.currentPrice;
-  const prev = history.length > 1 ? history[history.length - 2].price : latest;
-  const diff = latest - prev;
-  const isCheaper = diff < 0;
-
-  if (dealScore >= 90) {
-    return {
-      text: '【緊急速報】過去最安値を更新しました！',
-      color: 'text-red-600',
-      emoji: '🚨'
-    };
-  } else if (dealScore >= 70) {
-    return {
-      text: '値下がり検知。今が買い時です。',
-      color: 'text-blue-600',
-      emoji: '📉'
-    };
-  } else if (!hasEnoughData || history.length === 0) {
-    return {
-      text: '新着商品がリストに追加されました。',
-      color: 'text-purple-600',
-      emoji: '✨'
-    };
-  } else {
-    return {
-      text: '価格変動を監視中...',
-      color: 'text-gray-600',
-      emoji: '👀'
-    };
-  }
-}
-
-/**
- * タイムスタンプを生成（ランダムまたはデータ更新時刻）
- */
-function generateTimestamp(product: Product): string {
-  const history = product.priceHistory || [];
-  if (history.length > 0) {
-    const lastUpdate = new Date(history[history.length - 1].date);
-    const now = new Date();
-    const diffMinutes = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60));
-    
-    if (diffMinutes < 1) return 'たった今 更新';
-    if (diffMinutes < 60) return `${diffMinutes}分前 更新`;
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours}時間前 更新`;
-    return `${Math.floor(diffHours / 24)}日前 更新`;
-  }
-  
-  // ランダムな分数（1-120分）
-  const randomMinutes = Math.floor(Math.random() * 120) + 1;
-  return `${randomMinutes}分前 更新`;
+  if (diff < 0) return '#10b981'; // 緑（値下がり）
+  if (diff > 0) return '#ef4444'; // 赤（値上がり）
+  return '#9ca3af'; // グレー（変動なし）
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
@@ -94,71 +74,144 @@ export default function ProductCard({ product }: ProductCardProps) {
   const prev = history.length > 1 ? history[history.length - 2].price : latest;
   const diff = latest - prev;
   const isCheaper = diff < 0;
+  const isExpensive = diff > 0;
   
-  const aiComment = generateAIComment(product);
-  const timestamp = generateTimestamp(product);
+  const category = guessCategory(product);
+  const chartData = prepareChartData(product);
+  const chartColor = getChartColor(product);
 
   return (
     <a
       href={product.affiliateUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 flex gap-4 p-4 md:p-6"
+      className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100"
     >
-      {/* 左側：商品画像 */}
-      <div className="flex-shrink-0">
-        <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="w-full h-full object-contain mix-blend-multiply p-2"
-            loading="lazy"
-          />
+      {/* モバイル: 横並びレイアウト */}
+      <div className="md:hidden flex gap-4 p-4">
+        {/* 左: 大きな正方形画像 */}
+        <div className="flex-shrink-0">
+          <div className="w-24 h-24 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-contain mix-blend-multiply p-2"
+              loading="lazy"
+            />
+          </div>
+        </div>
+
+        {/* 右: 情報エリア */}
+        <div className="flex-1 min-w-0 flex flex-col gap-2">
+          {/* カテゴリタグ */}
+          <span className="text-xs text-gray-500 font-medium">{category}</span>
+          
+          {/* 商品名（2行制限） */}
+          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+            {product.name}
+          </h3>
+
+          {/* 価格推移グラフ */}
+          <div className="h-10 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id={`gradient-${product.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke={chartColor}
+                  strokeWidth={2}
+                  fill={`url(#gradient-${product.id})`}
+                  dot={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 価格とボタン */}
+          <div className="flex items-center justify-between mt-auto">
+            <div className="flex items-baseline gap-2">
+              {isCheaper && (
+                <span className="text-xs text-gray-400 line-through">
+                  ¥{prev.toLocaleString()}
+                </span>
+              )}
+              <span className="text-lg font-bold text-gray-900">
+                ¥{latest.toLocaleString()}
+              </span>
+            </div>
+            <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+              <ExternalLink size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 右側：情報エリア */}
-      <div className="flex-1 min-w-0 flex flex-col gap-2">
-        {/* タイムスタンプ */}
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span>🕒</span>
-          <span>{timestamp}</span>
+      {/* PC: 縦長カード型レイアウト */}
+      <div className="hidden md:flex flex-col">
+        {/* 画像（上部） */}
+        <div className="w-full aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-contain mix-blend-multiply p-4"
+            loading="lazy"
+          />
         </div>
 
-        {/* AIコメント（大きく表示） */}
-        <div className={`text-base md:text-lg font-bold ${aiComment.color} flex items-center gap-2`}>
-          <span>{aiComment.emoji}</span>
-          <span>{aiComment.text}</span>
-        </div>
-
-        {/* 商品名（控えめに） */}
-        <h3 className="text-sm md:text-base text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
-          {product.name}
-        </h3>
-
-        {/* 価格エリア（右端に大きく表示） */}
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            {isCheaper && (
-              <span className="flex items-center text-red-600 font-semibold">
-                <ArrowDownRight size={14} className="mr-0.5" />
-                ¥{Math.abs(diff).toLocaleString()} 値下がり
-              </span>
-            )}
-          </div>
+        {/* 情報エリア（下部） */}
+        <div className="p-4 flex flex-col gap-3">
+          {/* カテゴリタグ */}
+          <span className="text-xs text-gray-500 font-medium">{category}</span>
           
-          <div className="flex items-baseline gap-2 text-right">
-            {isCheaper && (
-              <span className="text-sm text-gray-400 line-through">
-                ¥{prev.toLocaleString()}
+          {/* 商品名（2行制限） */}
+          <h3 className="text-base font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors min-h-[3rem]">
+            {product.name}
+          </h3>
+
+          {/* 価格推移グラフ（中央） */}
+          <div className="h-10 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id={`gradient-pc-${product.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke={chartColor}
+                  strokeWidth={2}
+                  fill={`url(#gradient-pc-${product.id})`}
+                  dot={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 価格とボタン */}
+          <div className="flex items-center justify-between mt-auto">
+            <div className="flex items-baseline gap-2">
+              {isCheaper && (
+                <span className="text-sm text-gray-400 line-through">
+                  ¥{prev.toLocaleString()}
+                </span>
+              )}
+              <span className="text-xl font-bold text-gray-900">
+                ¥{latest.toLocaleString()}
               </span>
-            )}
-            <span className="text-xl md:text-2xl font-bold text-gray-900">
-              ¥{latest.toLocaleString()}
-            </span>
-            {isCheaper && (
-              <span className="text-lg text-red-600">↘</span>
-            )}
+            </div>
+            <button className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5">
+              <span>Amazon</span>
+              <ExternalLink size={14} />
+            </button>
           </div>
         </div>
       </div>
