@@ -78,14 +78,44 @@ export default function Home() {
         const response = await fetch('/api/products');
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // エラーレスポンスの詳細を取得
+          let errorMessage = `HTTP ${response.status}`;
+          let errorDetails = '';
+          
+          try {
+            const errorData = await response.json();
+            errorDetails = errorData.error || errorData.message || '';
+            if (errorData.details) {
+              errorDetails += ` (${errorData.details})`;
+            }
+          } catch {
+            // JSONパースに失敗した場合は、ステータステキストを使用
+            errorDetails = response.statusText || '';
+          }
+          
+          // ステータスコードに応じた詳細メッセージを生成
+          const statusMessages: Record<number, string> = {
+            404: '商品データファイルが見つかりません',
+            500: 'サーバー内部エラーが発生しました',
+            503: 'サービスが一時的に利用できません',
+          };
+          
+          const statusMessage = statusMessages[response.status] || 'データの取得に失敗しました';
+          const fullMessage = errorDetails 
+            ? `${statusMessage} (${response.status}: ${errorDetails})`
+            : `${statusMessage} (${response.status})`;
+          
+          throw new Error(fullMessage);
         }
         
         const data = await response.json();
         setProducts(data);
       } catch (err) {
         console.error('商品データの取得に失敗しました:', err);
-        setError('データの取得に失敗しました。時間をおいてお試しください。');
+        const errorMessage = err instanceof Error 
+          ? err.message 
+          : 'データの取得に失敗しました。時間をおいてお試しください。';
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -95,28 +125,55 @@ export default function Home() {
   }, []);
   
   // リトライ関数
-  const handleRetry = () => {
+  const handleRetry = async () => {
     setError(null);
     setIsLoading(true);
     
-    fetch('/api/products')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+    try {
+      const response = await fetch('/api/products');
+      
+      if (!response.ok) {
+        // エラーレスポンスの詳細を取得
+        let errorMessage = `HTTP ${response.status}`;
+        let errorDetails = '';
+        
+        try {
+          const errorData = await response.json();
+          errorDetails = errorData.error || errorData.message || '';
+          if (errorData.details) {
+            errorDetails += ` (${errorData.details})`;
+          }
+        } catch {
+          errorDetails = response.statusText || '';
         }
-        return res.json();
-      })
-      .then(data => {
-        setProducts(data);
-        setError(null);
-      })
-      .catch(err => {
-        console.error('商品データの取得に失敗しました:', err);
-        setError('データの取得に失敗しました。時間をおいてお試しください。');
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+        
+        // ステータスコードに応じた詳細メッセージを生成
+        const statusMessages: Record<number, string> = {
+          404: '商品データファイルが見つかりません',
+          500: 'サーバー内部エラーが発生しました',
+          503: 'サービスが一時的に利用できません',
+        };
+        
+        const statusMessage = statusMessages[response.status] || 'データの取得に失敗しました';
+        const fullMessage = errorDetails 
+          ? `${statusMessage} (${response.status}: ${errorDetails})`
+          : `${statusMessage} (${response.status})`;
+        
+        throw new Error(fullMessage);
+      }
+      
+      const data = await response.json();
+      setProducts(data);
+      setError(null);
+    } catch (err) {
+      console.error('商品データの取得に失敗しました:', err);
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'データの取得に失敗しました。時間をおいてお試しください。';
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 重複防止（ASINベースでフィルタリング）

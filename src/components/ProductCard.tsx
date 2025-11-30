@@ -109,10 +109,35 @@ export default function ProductCard({ product, onAlertClick, onFavoriteToggle }:
   
   // お気に入り状態をローカルストレージから読み込み
   useEffect(() => {
-    if (asin) {
+    if (!asin) return;
+    
+    const updateFavoriteState = () => {
       const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
       setIsFavorite(favorites.includes(asin));
-    }
+    };
+    
+    // 初回読み込み
+    updateFavoriteState();
+    
+    // storageイベントをリッスン（他のタブでの変更を検知）
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'favorites') {
+        updateFavoriteState();
+      }
+    };
+    
+    // カスタムイベントをリッスン（同一タブ内での変更を検知）
+    const handleFavoriteUpdated = () => {
+      updateFavoriteState();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('favoriteUpdated', handleFavoriteUpdated);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('favoriteUpdated', handleFavoriteUpdated);
+    };
   }, [asin]);
   
   // 価格変動のパーセンテージ（小数点第1位まで）
