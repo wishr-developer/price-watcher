@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import { CategoryProvider } from "@/contexts/CategoryContext";
+import WebVitals from "@/components/WebVitals";
 
 const metadataBase = new URL('https://price-watcher-plum.vercel.app');
 
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="flex flex-col min-h-screen bg-white text-slate-900">
+        <WebVitals />
         <CategoryProvider>
           <main className="flex-1">
             {children}
