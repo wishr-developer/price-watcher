@@ -56,7 +56,7 @@ export default function Home() {
   const { selectedCategory, setSelectedCategory } = useCategory();
 
   // カテゴリリスト（Header.tsxと同期）
-  const categories = [
+  const categories = useMemo(() => [
     { id: 'all', label: 'すべて' },
     { id: 'ガジェット', label: 'ガジェット' },
     { id: '家電', label: '家電' },
@@ -67,7 +67,7 @@ export default function Home() {
     { id: '食品', label: '食品' },
     { id: '文房具', label: '文房具' },
     { id: 'その他', label: 'その他' },
-  ];
+  ], []);
   
   useEffect(() => { 
     const fetchProducts = async () => {
@@ -380,10 +380,8 @@ export default function Home() {
   ];
 
   const handleAlertClick = (product: Product) => {
-    console.log('アラートボタンがクリックされました:', product.name);
     setSelectedProduct(product);
     setIsModalOpen(true);
-    console.log('モーダル状態:', true);
   };
 
   const handleCloseModal = () => {
@@ -805,7 +803,6 @@ export default function Home() {
                         onAlertClick={handleAlertClick}
                         onFavoriteToggle={(asin, isFavorite) => {
                           // お気に入り状態変更時の処理（必要に応じて実装）
-                          console.log(`お気に入り${isFavorite ? '追加' : '削除'}: ${asin}`);
                         }}
                       />
                     ))}

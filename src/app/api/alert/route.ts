@@ -34,13 +34,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // モック機能：コンソールにログを出力
-    console.log('=== 価格アラート設定 ===');
-    console.log(`ASIN: ${asin}`);
-    console.log(`ターゲット価格: ¥${targetPrice.toLocaleString()}`);
-    console.log(`通知先メール: ${email}`);
-    console.log(`設定日時: ${new Date().toISOString()}`);
-    console.log('======================');
+    // モック機能：本番環境では実際の通知サービスに接続
+    // 開発環境でのみログ出力（必要に応じて実装）
+    if (process.env.NODE_ENV === 'development') {
+      // 開発環境でのみログ出力
+    }
 
     // 成功レスポンス
     return NextResponse.json({

@@ -34,7 +34,7 @@ export default function AlertModal({ isOpen, onClose, product }: AlertModalProps
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        handleClose();
+        onClose();
       }
     };
 
@@ -42,7 +42,7 @@ export default function AlertModal({ isOpen, onClose, product }: AlertModalProps
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   // モーダルが開いた時に最初の入力にフォーカス
   useEffect(() => {
