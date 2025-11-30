@@ -268,6 +268,9 @@ export default function Home() {
   const filteredProducts = useMemo(() => {
     let result = [...uniqueProducts];
 
+    // ¥0商品を除外
+    result = result.filter((p: Product) => p.currentPrice > 0);
+
     // カテゴリフィルター（最初に適用）
     if (selectedCategory && selectedCategory !== 'all') {
       result = result.filter((p: Product) => {
