@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, ArrowDownRight } from 'lucide-react';
+import { useState } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { Product } from '@/types/product';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
@@ -8,6 +9,8 @@ interface ProductCardProps {
   product: Product;
   rank?: number;
 }
+
+type PeriodType = '7D' | '30D' | 'ALL';
 
 /**
  * カテゴリを推測する関数
@@ -42,14 +45,27 @@ function guessCategory(product: Product): string {
 }
 
 /**
- * 価格推移データを準備
+ * 期間に基づいて価格推移データをフィルタリング
  */
-function prepareChartData(product: Product): Array<{ price: number }> {
+function prepareChartData(product: Product, period: PeriodType): Array<{ price: number }> {
   const history = product.priceHistory || [];
+  
   if (history.length === 0) {
     return [{ price: product.currentPrice }];
   }
-  return history.map(h => ({ price: h.price }));
+
+  let filteredHistory = [...history];
+
+  if (period === '7D') {
+    // 過去7日分（末尾から7件）
+    filteredHistory = history.slice(-7);
+  } else if (period === '30D') {
+    // 過去30日分（末尾から30件）
+    filteredHistory = history.slice(-30);
+  }
+  // 'ALL'の場合は全て
+
+  return filteredHistory.map(h => ({ price: h.price }));
 }
 
 /**
@@ -69,6 +85,8 @@ function getChartColor(product: Product): string {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('ALL');
+  
   const history = product.priceHistory || [];
   const latest = product.currentPrice;
   const prev = history.length > 1 ? history[history.length - 2].price : latest;
@@ -77,7 +95,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const isExpensive = diff > 0;
   
   const category = guessCategory(product);
-  const chartData = prepareChartData(product);
+  const chartData = prepareChartData(product, selectedPeriod);
   const chartColor = getChartColor(product);
 
   return (
@@ -111,26 +129,50 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.name}
           </h3>
 
-          {/* 価格推移グラフ */}
-          <div className="h-10 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id={`gradient-${product.id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  type="monotone"
-                  dataKey="price"
-                  stroke={chartColor}
-                  strokeWidth={2}
-                  fill={`url(#gradient-${product.id})`}
-                  dot={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* 期間選択ボタンと価格推移グラフ */}
+          <div className="space-y-1">
+            {/* 期間選択ボタン */}
+            <div className="flex gap-1">
+              {(['7D', '30D', 'ALL'] as PeriodType[]).map((period) => (
+                <button
+                  key={period}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedPeriod(period);
+                  }}
+                  className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                    selectedPeriod === period
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
+
+            {/* 価格推移グラフ */}
+            <div className="h-10 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id={`gradient-${product.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="price"
+                    stroke={chartColor}
+                    strokeWidth={2}
+                    fill={`url(#gradient-${product.id})`}
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
           {/* 価格とボタン */}
@@ -144,8 +186,19 @@ export default function ProductCard({ product }: ProductCardProps) {
               <span className="text-lg font-bold text-gray-900">
                 ¥{latest.toLocaleString()}
               </span>
+              {/* 価格変動額の表示 */}
+              {diff !== 0 && (
+                <span className={`text-xs font-semibold ${
+                  isCheaper ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {isCheaper ? '-' : '+'}¥{Math.abs(diff).toLocaleString()}
+                </span>
+              )}
             </div>
-            <button className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+            <button 
+              onClick={(e) => e.preventDefault()}
+              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            >
               <ExternalLink size={16} />
             </button>
           </div>
@@ -174,26 +227,50 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.name}
           </h3>
 
-          {/* 価格推移グラフ（中央） */}
-          <div className="h-10 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id={`gradient-pc-${product.id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  type="monotone"
-                  dataKey="price"
-                  stroke={chartColor}
-                  strokeWidth={2}
-                  fill={`url(#gradient-pc-${product.id})`}
-                  dot={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* 期間選択ボタンと価格推移グラフ */}
+          <div className="space-y-1">
+            {/* 期間選択ボタン */}
+            <div className="flex gap-1">
+              {(['7D', '30D', 'ALL'] as PeriodType[]).map((period) => (
+                <button
+                  key={period}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedPeriod(period);
+                  }}
+                  className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors ${
+                    selectedPeriod === period
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
+
+            {/* 価格推移グラフ */}
+            <div className="h-10 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id={`gradient-pc-${product.id}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    type="monotone"
+                    dataKey="price"
+                    stroke={chartColor}
+                    strokeWidth={2}
+                    fill={`url(#gradient-pc-${product.id})`}
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
           {/* 価格とボタン */}
@@ -207,8 +284,19 @@ export default function ProductCard({ product }: ProductCardProps) {
               <span className="text-xl font-bold text-gray-900">
                 ¥{latest.toLocaleString()}
               </span>
+              {/* 価格変動額の表示 */}
+              {diff !== 0 && (
+                <span className={`text-sm font-semibold ${
+                  isCheaper ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {isCheaper ? '-' : '+'}¥{Math.abs(diff).toLocaleString()}
+                </span>
+              )}
             </div>
-            <button className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5">
+            <button 
+              onClick={(e) => e.preventDefault()}
+              className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5"
+            >
               <span>Amazon</span>
               <ExternalLink size={14} />
             </button>
