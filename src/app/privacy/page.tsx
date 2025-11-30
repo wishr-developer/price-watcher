@@ -11,9 +11,10 @@ export default function PrivacyPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
             href="/"
-            className="text-2xl font-bold text-primary-600 hover:text-primary-700 transition-colors"
+            className="flex items-baseline gap-1"
           >
-            Price Watcher
+            <span className="text-2xl font-bold tracking-tight text-slate-900">XIORA</span>
+            <span className="text-xl font-light text-slate-500 ml-1">TREND</span>
           </Link>
         </div>
       </header>
@@ -28,7 +29,7 @@ export default function PrivacyPage() {
               1. はじめに
             </h2>
             <p className="text-gray-700 leading-relaxed mb-4">
-              Price Watcher（以下「当サイト」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めています。
+              XIORA TREND（以下「当サイト」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めています。
               本プライバシーポリシーは、当サイトがどのような情報を収集し、どのように使用するかについて説明します。
             </p>
           </section>

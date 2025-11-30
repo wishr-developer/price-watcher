@@ -1,19 +1,37 @@
 'use client';
 
-import { Search, ShoppingBag, X } from 'lucide-react';
+import { Search, ShoppingBag, X, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { useCategory } from '@/contexts/CategoryContext';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
 }
 
+// カテゴリリスト
+const categories = [
+  { id: 'all', label: 'すべて' },
+  { id: 'ガジェット', label: 'ガジェット' },
+  { id: '家電', label: '家電' },
+  { id: 'キッチン', label: 'キッチン' },
+  { id: 'ゲーム', label: 'ゲーム' },
+  { id: 'ヘルスケア', label: 'ヘルスケア' },
+  { id: 'ビューティー', label: 'ビューティー' },
+  { id: '食品', label: '食品' },
+  { id: '文房具', label: '文房具' },
+  { id: 'その他', label: 'その他' },
+];
+
 export default function Header({ onSearch }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
+  const { selectedCategory, setSelectedCategory } = useCategory();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -128,6 +146,30 @@ export default function Header({ onSearch }: HeaderProps) {
     };
   }, [isMobileSearchOpen]);
 
+  // カテゴリメニューの外側クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target as Node)) {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+
+    if (isCategoryMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCategoryMenuOpen]);
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setIsCategoryMenuOpen(false);
+  };
+
+  const selectedCategoryLabel = categories.find(c => c.id === selectedCategory)?.label || 'すべて';
+
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -155,30 +197,44 @@ export default function Header({ onSearch }: HeaderProps) {
 
           {/* 右側メニュー */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* モバイル: カテゴリ・ランキングリンク */}
-            <Link 
-              href="/" 
-              className="text-sm font-medium text-gray-600 hover:text-black md:hidden"
-            >
-              カテゴリ
-            </Link>
-            <Link 
-              href="/" 
-              className="text-sm font-medium text-gray-600 hover:text-black md:hidden"
-            >
-              ランキング
-            </Link>
+            {/* カテゴリドロップダウン */}
+            <div className="relative" ref={categoryMenuRef}>
+              <button
+                onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
+                className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                aria-expanded={isCategoryMenuOpen}
+                aria-haspopup="true"
+              >
+                <span>{selectedCategoryLabel}</span>
+                <ChevronDown size={16} className={`transition-transform ${isCategoryMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* カテゴリメニュー */}
+              {isCategoryMenuOpen && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+                  <div className="py-1">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => handleCategorySelect(category.id)}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                          selectedCategory === category.id
+                            ? 'bg-blue-50 text-blue-600 font-medium'
+                            : 'text-gray-700'
+                        }`}
+                      >
+                        {category.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             
-            {/* PC: カテゴリ・ランキングリンク */}
+            {/* ランキングリンク（将来の実装用） */}
             <Link 
               href="/" 
-              className="text-sm font-medium text-gray-600 hover:text-black hidden sm:block md:block"
-            >
-              カテゴリ
-            </Link>
-            <Link 
-              href="/" 
-              className="text-sm font-medium text-gray-600 hover:text-black hidden sm:block md:block"
+              className="text-sm font-medium text-gray-600 hover:text-black hidden sm:block"
             >
               ランキング
             </Link>

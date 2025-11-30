@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { Bell, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, ExternalLink, Heart } from 'lucide-react';
 import Image from 'next/image';
 import { Product } from '@/types/product';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -11,6 +11,7 @@ interface ProductCardProps {
   product: Product;
   rank?: number;
   onAlertClick?: (product: Product) => void;
+  onFavoriteToggle?: (asin: string, isFavorite: boolean) => void;
 }
 
 type PeriodType = '7D' | '30D' | 'ALL';
@@ -122,8 +123,9 @@ function getChartColor(product: Product): string {
   return '#9ca3af'; // グレー（変動なし）
 }
 
-export default function ProductCard({ product, onAlertClick }: ProductCardProps) {
+export default function ProductCard({ product, onAlertClick, onFavoriteToggle }: ProductCardProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('ALL');
+  const [isFavorite, setIsFavorite] = useState(false);
   
   const history = product.priceHistory || [];
   const latest = product.currentPrice;
@@ -131,6 +133,17 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
   const diff = latest - prev;
   const isCheaper = diff < 0;
   const isExpensive = diff > 0;
+  
+  // ASINを取得
+  const asin = extractASIN(product.affiliateUrl);
+  
+  // お気に入り状態をローカルストレージから読み込み
+  useEffect(() => {
+    if (asin) {
+      const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+      setIsFavorite(favorites.includes(asin));
+    }
+  }, [asin]);
   
   // 価格変動のパーセンテージ（小数点第1位まで）
   const percentChange = prev > 0 ? Math.round((Math.abs(diff) / prev) * 100 * 10) / 10 : 0;
@@ -153,6 +166,37 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
     e.stopPropagation();
     if (onAlertClick) {
       onAlertClick(product);
+    }
+  };
+
+  // お気に入りボタンのクリックハンドラ
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!asin) return;
+    
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    const newIsFavorite = !isFavorite;
+    
+    if (newIsFavorite) {
+      // お気に入りに追加
+      if (!favorites.includes(asin)) {
+        favorites.push(asin);
+      }
+    } else {
+      // お気に入りから削除
+      const index = favorites.indexOf(asin);
+      if (index > -1) {
+        favorites.splice(index, 1);
+      }
+    }
+    
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+    setIsFavorite(newIsFavorite);
+    
+    if (onFavoriteToggle) {
+      onFavoriteToggle(asin, newIsFavorite);
     }
   };
 
@@ -181,8 +225,10 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
 
         {/* 右: 情報エリア */}
         <div className="flex-1 min-w-0 flex flex-col gap-2">
-          {/* カテゴリタグ */}
-          <span className="text-xs text-gray-500 font-medium">{category}</span>
+          {/* カテゴリバッジ */}
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 w-fit">
+            {category}
+          </span>
           
           {/* 商品名（2行制限） */}
           <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
@@ -303,12 +349,27 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
             loading="lazy"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
+          {/* PC用のお気に入りボタン（画像上） */}
+          {asin && (
+            <button
+              onClick={handleFavoriteClick}
+              className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-colors"
+              aria-label={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+            >
+              <Heart
+                size={18}
+                className={isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}
+              />
+            </button>
+          )}
         </div>
 
         {/* 情報エリア（下部） */}
         <div className="p-4 flex flex-col gap-3 flex-1">
-          {/* カテゴリタグ */}
-          <span className="text-xs text-gray-500 font-medium">{category}</span>
+          {/* カテゴリバッジ */}
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 w-fit">
+            {category}
+          </span>
           
           {/* 商品名（2行制限） */}
           <h3 className="text-base font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors min-h-[3rem]">

@@ -5,8 +5,10 @@ import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import AlertModal from '@/components/AlertModal';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import Pagination from '@/components/Pagination';
 import { Product } from '@/types/product';
-import { Crown, AlertCircle, RefreshCw } from 'lucide-react';
+import { Crown, AlertCircle, RefreshCw, Search, X } from 'lucide-react';
+import { useCategory } from '@/contexts/CategoryContext';
 
 /**
  * Deal Scoreを計算する関数
@@ -37,6 +39,9 @@ function extractASIN(url: string): string | null {
 
 type TabType = 'drops' | 'new' | 'ranking' | 'all';
 
+// 1ページあたりの商品数
+const ITEMS_PER_PAGE = 20;
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +50,22 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { selectedCategory, setSelectedCategory } = useCategory();
+
+  // カテゴリリスト（Header.tsxと同期）
+  const categories = [
+    { id: 'all', label: 'すべて' },
+    { id: 'ガジェット', label: 'ガジェット' },
+    { id: '家電', label: '家電' },
+    { id: 'キッチン', label: 'キッチン' },
+    { id: 'ゲーム', label: 'ゲーム' },
+    { id: 'ヘルスケア', label: 'ヘルスケア' },
+    { id: 'ビューティー', label: 'ビューティー' },
+    { id: '食品', label: '食品' },
+    { id: '文房具', label: '文房具' },
+    { id: 'その他', label: 'その他' },
+  ];
   
   useEffect(() => { 
     const fetchProducts = async () => {
@@ -198,6 +219,15 @@ export default function Home() {
   const filteredProducts = useMemo(() => {
     let result = [...uniqueProducts];
 
+    // カテゴリフィルター（最初に適用）
+    // 商品データにカテゴリ情報がないため、guessCategory関数を使用して商品名からカテゴリを推測
+    if (selectedCategory && selectedCategory !== 'all') {
+      result = result.filter((p: Product) => {
+        const category = guessCategory(p);
+        return category === selectedCategory;
+      });
+    }
+
     // 検索フィルター
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -298,7 +328,24 @@ export default function Home() {
     }
 
     return finalResult;
-  }, [uniqueProducts, searchQuery, activeTab]);
+  }, [uniqueProducts, searchQuery, activeTab, selectedCategory]);
+
+  // ページネーション: 現在のページに対応する商品をスライス
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage]);
+
+  // 総ページ数を計算
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  }, [filteredProducts.length]);
+
+  // 検索・フィルター変更時にページをリセット
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab, selectedCategory]);
 
   // トレンドTOP3（スコア順）
   const trendProducts = useMemo(() => {
@@ -329,7 +376,7 @@ export default function Home() {
 
   // 構造化データ（JSON-LD）の生成
   const structuredData = useMemo(() => {
-    const productStructuredData = uniqueProducts
+    const productStructuredData = filteredProducts
       .filter(product => {
         const asin = extractASIN(product.affiliateUrl);
         return asin !== null;
@@ -352,33 +399,79 @@ export default function Home() {
         };
       });
 
+    // 動的なBreadcrumbList（カテゴリフィルターに応じて変更）
+    const baseUrl = 'https://price-watcher-plum.vercel.app';
+    const breadcrumbItems = [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: baseUrl,
+      },
+    ];
+
+    if (selectedCategory && selectedCategory !== 'all') {
+      const categoryLabel = categories.find(c => c.id === selectedCategory)?.label || selectedCategory;
+      breadcrumbItems.push({
+        '@type': 'ListItem',
+        position: 2,
+        name: categoryLabel,
+        item: `${baseUrl}?category=${encodeURIComponent(selectedCategory)}`,
+      });
+    } else {
+      breadcrumbItems.push({
+        '@type': 'ListItem',
+        position: 2,
+        name: 'All Products',
+        item: baseUrl,
+      });
+    }
+
     const breadcrumbStructuredData = {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: 'Home',
-          item: 'https://price-watcher-plum.vercel.app',
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: 'All Products',
-          item: 'https://price-watcher-plum.vercel.app',
-        },
-      ],
+      itemListElement: breadcrumbItems,
     };
 
     return {
       products: productStructuredData,
       breadcrumb: breadcrumbStructuredData,
     };
-  }, [uniqueProducts]);
+  }, [filteredProducts, selectedCategory, categories]);
+
+  // 動的なページタイトルを生成
+  const pageTitle = useMemo(() => {
+    const baseTitle = 'XIORA TREND | Amazon最安値・トレンド速報';
+    if (selectedCategory && selectedCategory !== 'all') {
+      const categoryLabel = categories.find(c => c.id === selectedCategory)?.label || selectedCategory;
+      return `${categoryLabel} | ${baseTitle}`;
+    }
+    if (searchQuery) {
+      return `「${searchQuery}」の検索結果 | ${baseTitle}`;
+    }
+    return baseTitle;
+  }, [selectedCategory, searchQuery, categories]);
+
+  // ページタイトルを動的に更新
+  useEffect(() => {
+    document.title = pageTitle;
+    
+    // OGPメタタグを更新
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) {
+      ogTitle.setAttribute('content', pageTitle);
+    }
+    
+    // Twitter Cardメタタグを更新
+    const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twitterTitle) {
+      twitterTitle.setAttribute('content', pageTitle);
+    }
+  }, [pageTitle]);
 
   return (
     <>
+
       {/* 構造化データ（JSON-LD） */}
       {structuredData.products.length > 0 && (
         <>
@@ -535,11 +628,24 @@ export default function Home() {
 
         {/* 商品グリッド */}
         <div className="container mx-auto max-w-7xl px-4 py-6">
-          {searchQuery && !isLoading && !error && (
+          {/* 検索結果・カテゴリフィルター情報 */}
+          {(searchQuery || (selectedCategory && selectedCategory !== 'all')) && !isLoading && !error && (
             <div className="mb-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-1">
-                「{searchQuery}」の検索結果
-              </h2>
+              {searchQuery && (
+                <h2 className="text-lg font-bold text-slate-900 mb-1">
+                  「{searchQuery}」の検索結果
+                </h2>
+              )}
+              {selectedCategory && selectedCategory !== 'all' && !searchQuery && (
+                <h2 className="text-lg font-bold text-slate-900 mb-1">
+                  {categories.find(c => c.id === selectedCategory)?.label || selectedCategory}カテゴリ
+                </h2>
+              )}
+              {searchQuery && selectedCategory && selectedCategory !== 'all' && (
+                <h2 className="text-lg font-bold text-slate-900 mb-1">
+                  「{searchQuery}」の検索結果（{categories.find(c => c.id === selectedCategory)?.label || selectedCategory}カテゴリ）
+                </h2>
+              )}
               <span className="text-sm text-gray-500">
                 {filteredProducts.length}件 / 全{uniqueProducts.length}件
               </span>
@@ -581,20 +687,103 @@ export default function Home() {
           {!isLoading && !error && (
             <>
               {filteredProducts.length === 0 ? (
-                <div className="text-center py-16">
-                  <p className="text-gray-500 text-lg mb-2">商品が見つかりませんでした</p>
-                  <p className="text-gray-400 text-sm">検索条件を変更してお試しください</p>
+                <div className="text-center py-20 px-4">
+                  <div className="max-w-md mx-auto">
+                    {/* アイコン */}
+                    <div className="flex justify-center mb-6">
+                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                        <Search className="w-10 h-10 text-gray-400" />
+                      </div>
+                    </div>
+                    
+                    {/* メインメッセージ */}
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                      お探しの商品が見つかりませんでした
+                    </h2>
+                    
+                    {/* サブメッセージ */}
+                    <p className="text-gray-600 mb-6 leading-relaxed">
+                      {searchQuery ? (
+                        <>
+                          「<span className="font-semibold text-gray-900">{searchQuery}</span>」に一致する商品は見つかりませんでした。
+                          <br />
+                          別のキーワードで検索するか、フィルターを変更してお試しください。
+                        </>
+                      ) : selectedCategory && selectedCategory !== 'all' ? (
+                        <>
+                          選択したカテゴリ「<span className="font-semibold text-gray-900">
+                            {categories.find(c => c.id === selectedCategory)?.label || selectedCategory}
+                          </span>」に該当する商品は現在ありません。
+                          <br />
+                          別のカテゴリを選択するか、検索条件を変更してお試しください。
+                        </>
+                      ) : (
+                        <>
+                          現在、表示できる商品がありません。
+                          <br />
+                          検索条件やフィルターを変更してお試しください。
+                        </>
+                      )}
+                    </p>
+                    
+                    {/* アクションボタン */}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      {(searchQuery || (selectedCategory && selectedCategory !== 'all')) && (
+                        <button
+                          onClick={() => {
+                            setSearchQuery('');
+                            setSelectedCategory('all');
+                            setActiveTab('all');
+                          }}
+                          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          <X size={18} />
+                          <span>検索条件をクリア</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSelectedCategory('all');
+                          setActiveTab('all');
+                        }}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Search size={18} />
+                        <span>すべての商品を表示</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {filteredProducts.map((p) => (
-                    <ProductCard 
-                      key={p.id} 
-                      product={p} 
-                      onAlertClick={handleAlertClick}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    {paginatedProducts.map((p) => (
+                      <ProductCard 
+                        key={p.id} 
+                        product={p} 
+                        onAlertClick={handleAlertClick}
+                        onFavoriteToggle={(asin, isFavorite) => {
+                          // お気に入り状態変更時の処理（必要に応じて実装）
+                          console.log(`お気に入り${isFavorite ? '追加' : '削除'}: ${asin}`);
+                        }}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* ページネーション */}
+                  {totalPages > 1 && (
+                    <div className="mt-8">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={filteredProducts.length}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                        onPageChange={setCurrentPage}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
