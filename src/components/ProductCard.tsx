@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { ExternalLink, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Product } from '@/types/product';
-import { AreaChart, Area, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import DealScoreTooltip from './DealScoreTooltip';
 
 interface ProductCardProps {
@@ -131,7 +131,7 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
   const isCheaper = diff < 0;
   const isExpensive = diff > 0;
   
-  // 価格変動のパーセンテージ
+  // 価格変動のパーセンテージ（小数点第1位まで）
   const percentChange = prev > 0 ? Math.round((Math.abs(diff) / prev) * 100 * 10) / 10 : 0;
   
   // 過去最安値
@@ -146,12 +146,24 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
   const chartData = prepareChartData(product, selectedPeriod);
   const chartColor = getChartColor(product);
 
+  // アラートボタンのクリックハンドラ（外部リンクへの遷移を防ぐ）
+  const handleAlertClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onAlertClick) {
+      onAlertClick(product);
+    }
+  };
+
+  // カード全体のクリックハンドラ（外部リンクへ遷移）
+  const handleCardClick = () => {
+    window.open(product.affiliateUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
-    <a
-      href={product.affiliateUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100"
+    <div
+      onClick={handleCardClick}
+      className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-100 cursor-pointer"
     >
       {/* モバイル: 横並びレイアウト */}
       <div className="md:hidden flex gap-4 p-4">
@@ -187,7 +199,7 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
             </div>
           )}
 
-          {/* 価格変動情報（強化版：▼ 8.3%（−¥93）形式） */}
+          {/* 価格変動情報（最終化：▼ 5.1%（−¥55）形式） */}
           {diff !== 0 && (
             <div className={`text-xs font-semibold ${
               isCheaper ? 'text-price-drop' : 'text-price-up'
@@ -196,7 +208,7 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
             </div>
           )}
 
-          {/* 最安値との差（統一表記） */}
+          {/* 最安値との差（明瞭化：最安値との差: +¥1,131） */}
           {diffFromLowest !== null && !isLowestPrice && (
             <div className="text-xs text-gray-600">
               最安値との差: {diffFromLowest > 0 ? '+' : ''}¥{diffFromLowest.toLocaleString()}
@@ -259,25 +271,16 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
                 ¥{latest.toLocaleString()}
               </span>
             </div>
-            <div className="flex gap-2">
+            {/* アラート設定ボタン（クリックイベントを外部へ移譲） */}
+            {onAlertClick && (
               <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (onAlertClick) onAlertClick(product);
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                onClick={handleAlertClick}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 <Bell size={14} />
                 <span>アラート設定</span>
               </button>
-              <button 
-                onClick={(e) => e.preventDefault()}
-                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              >
-                <ExternalLink size={16} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -314,7 +317,7 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
             </div>
           )}
 
-          {/* 価格変動情報（強化版：▼ 8.3%（−¥93）形式） */}
+          {/* 価格変動情報（最終化：▼ 5.1%（−¥55）形式） */}
           {diff !== 0 && (
             <div className={`text-sm font-semibold ${
               isCheaper ? 'text-price-drop' : 'text-price-up'
@@ -323,7 +326,7 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
             </div>
           )}
 
-          {/* 最安値との差（統一表記） */}
+          {/* 最安値との差（明瞭化：最安値との差: +¥1,131） */}
           {diffFromLowest !== null && !isLowestPrice && (
             <div className="text-xs text-gray-600">
               最安値との差: {diffFromLowest > 0 ? '+' : ''}¥{diffFromLowest.toLocaleString()}
@@ -386,29 +389,19 @@ export default function ProductCard({ product, onAlertClick }: ProductCardProps)
                 ¥{latest.toLocaleString()}
               </span>
             </div>
-            <div className="flex gap-2">
+            {/* アラート設定ボタン（クリックイベントを外部へ移譲） */}
+            {onAlertClick && (
               <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (onAlertClick) onAlertClick(product);
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                onClick={handleAlertClick}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
                 <Bell size={14} />
                 <span>アラート設定</span>
               </button>
-              <button 
-                onClick={(e) => e.preventDefault()}
-                className="px-3 py-1.5 text-sm text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5"
-              >
-                <span>Amazon</span>
-                <ExternalLink size={14} />
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
-    </a>
+    </div>
   );
 }
