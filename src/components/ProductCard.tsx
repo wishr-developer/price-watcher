@@ -282,65 +282,61 @@ export default function ProductCard({ product, onAlertClick, onFavoriteToggle, i
         </div>
 
         {/* 右: 情報エリア */}
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+        <div className="flex-1 min-w-0 flex flex-col gap-2">
           {/* 商品名（2行制限） */}
           <h3 className="text-base font-medium text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
             {product.name}
           </h3>
 
-          {/* 価格表示（最優先表示、商品名のすぐ下） */}
-          <div className="flex items-baseline gap-2">
-            {isCheaper ? (
-              <>
-                <span className="text-lg font-bold text-gray-500 line-through">
-                  ¥{prev.toLocaleString()}
-                </span>
-                <span className="text-2xl font-bold text-gray-900">
+          {/* 価格ブロック（集約表示） */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              {isCheaper ? (
+                <>
+                  <span className="text-lg font-bold text-gray-500 line-through">
+                    ¥{prev.toLocaleString()}
+                  </span>
+                  <span className="text-2xl font-bold text-gray-900">
+                    ¥{latest.toLocaleString()}
+                  </span>
+                  {diff !== 0 && (
+                    <>
+                      <span className="text-base font-bold text-sale">
+                        -{percentChange}%
+                      </span>
+                      <span className="text-sm font-bold text-sale">
+                        -¥{Math.abs(diff).toLocaleString()}
+                      </span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span className="text-xl font-bold text-gray-900">
                   ¥{latest.toLocaleString()}
                 </span>
-              </>
-            ) : (
-              <span className="text-xl font-bold text-gray-900">
-                ¥{latest.toLocaleString()}
-              </span>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* 割引額の強調表示（値下がりの場合のみ、価格の下） */}
-          {isCheaper && diff !== 0 && (
-            <div className="flex items-center gap-2 bg-sale-bg rounded-lg px-2.5 py-1.5 border-2 border-orange-300">
-              <span className="text-base font-bold text-sale">
-                -{percentChange}%
-              </span>
-              <span className="text-sm font-bold text-sale">
-                -¥{Math.abs(diff).toLocaleString()}
-              </span>
-            </div>
-          )}
-
-          {/* AI Deal Score（権威性のあるエンブレム風バッジ） */}
-          {dealScore > 0 && (
-            <div className="flex items-center justify-start">
-              <DealScoreBadge score={dealScore} />
-            </div>
-          )}
-
-          {/* 社会的証明と緊急性のトリガー */}
+          {/* ステータスブロック（AIスコア・評価・在庫情報を統合） */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* AI Deal Score */}
+            {dealScore > 0 && (
+              <DealScoreBadge score={dealScore} />
+            )}
             {/* レビュー評価（社会的証明） */}
             <div className="flex items-center gap-0.5">
               <Star size={12} className="fill-yellow-400 text-yellow-400" />
               <span className="text-xs font-semibold text-gray-700">4.5</span>
               <span className="text-[10px] text-gray-500">(128)</span>
             </div>
-            {/* 緊急性のトリガー（在庫残りわずか） */}
+            {/* 在庫ステータス */}
             {isCheaper && diff !== 0 && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-cta border border-red-600">
                 <AlertCircle size={9} />
                 在庫残りわずか
               </span>
             )}
-            {/* 過去最安値バッジ（直近7日で更新した商品のみ） */}
             {isLowestPriceRecent && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
                 🏆 過去最安値
@@ -492,65 +488,61 @@ export default function ProductCard({ product, onAlertClick, onFavoriteToggle, i
         </div>
 
         {/* 情報エリア（下部） */}
-        <div className="p-3 flex flex-col gap-1.5 flex-1">
+        <div className="p-3 flex flex-col gap-2 flex-1">
           {/* 商品名（2行制限） */}
           <h3 className="text-base font-medium text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors min-h-[2.5rem]">
             {product.name}
           </h3>
 
-          {/* 価格表示（最優先表示、商品名のすぐ下） */}
-          <div className="flex items-baseline gap-2.5">
-            {isCheaper ? (
-              <>
-                <span className="text-lg font-bold text-gray-500 line-through">
-                  ¥{prev.toLocaleString()}
-                </span>
-                <span className="text-2xl font-bold text-gray-900">
+          {/* 価格ブロック（集約表示） */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              {isCheaper ? (
+                <>
+                  <span className="text-lg font-bold text-gray-500 line-through">
+                    ¥{prev.toLocaleString()}
+                  </span>
+                  <span className="text-2xl font-bold text-gray-900">
+                    ¥{latest.toLocaleString()}
+                  </span>
+                  {diff !== 0 && (
+                    <>
+                      <span className="text-lg font-bold text-sale">
+                        -{percentChange}%
+                      </span>
+                      <span className="text-base font-bold text-sale">
+                        -¥{Math.abs(diff).toLocaleString()}
+                      </span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span className="text-xl font-bold text-gray-900">
                   ¥{latest.toLocaleString()}
                 </span>
-              </>
-            ) : (
-              <span className="text-xl font-bold text-gray-900">
-                ¥{latest.toLocaleString()}
-              </span>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* 割引額の強調表示（値下がりの場合のみ、価格の下） */}
-          {isCheaper && diff !== 0 && (
-            <div className="flex items-center gap-2 bg-sale-bg rounded-lg px-2.5 py-1.5 border-2 border-orange-300">
-              <span className="text-lg font-bold text-sale">
-                -{percentChange}%
-              </span>
-              <span className="text-base font-bold text-sale">
-                -¥{Math.abs(diff).toLocaleString()}
-              </span>
-            </div>
-          )}
-
-          {/* AI Deal Score（権威性のあるエンブレム風バッジ） */}
-          {dealScore > 0 && (
-            <div className="flex items-center justify-start">
-              <DealScoreBadge score={dealScore} />
-            </div>
-          )}
-
-          {/* 社会的証明と緊急性のトリガー */}
+          {/* ステータスブロック（AIスコア・評価・在庫情報を統合） */}
           <div className="flex items-center gap-1.5 flex-wrap">
+            {/* AI Deal Score */}
+            {dealScore > 0 && (
+              <DealScoreBadge score={dealScore} />
+            )}
             {/* レビュー評価（社会的証明） */}
             <div className="flex items-center gap-0.5">
               <Star size={12} className="fill-yellow-400 text-yellow-400" />
               <span className="text-[11px] font-semibold text-gray-700">4.5</span>
               <span className="text-[9px] text-gray-500">(128)</span>
             </div>
-            {/* 緊急性のトリガー（在庫残りわずか） */}
+            {/* 在庫ステータス */}
             {isCheaper && diff !== 0 && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-cta border border-red-600">
                 <AlertCircle size={9} />
                 在庫残りわずか
               </span>
             )}
-            {/* 過去最安値バッジ（直近7日で更新した商品のみ） */}
             {isLowestPriceRecent && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
                 🏆 過去最安値
