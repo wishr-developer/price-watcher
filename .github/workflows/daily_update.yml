@@ -32,6 +32,23 @@ jobs:
         run: |
           python3 scripts/update_prices.py
 
+# --- X (Twitter) 自動投稿ステップ ---
+      - name: Install tweepy
+        run: pip install tweepy
+        
+      - name: Post best deal to X
+        if: success()
+        env:
+          VERCEL_URL: ${{ secrets.VERCEL_URL }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+        run: |
+          echo "Xへの自動投稿を開始します..."
+          python3 scripts/post_to_x.py
+          echo "Xへの自動投稿が完了しました。"
+
       - name: 変更をコミット＆プッシュ
         run: |
           git config --local user.email "action@github.com"
