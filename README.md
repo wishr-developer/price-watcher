@@ -255,6 +255,36 @@ python3 scripts/import_ranking.py
 - Git操作は、変更が検出された場合のみ実行されます
 - 各キーワードにつき3ページを巡回するため、1回の実行で大量の商品を収集できます
 
+### AI自動分類（LLM連携準備）
+
+カテゴリが「その他」または空欄になっている商品を、外部LLM（大規模言語モデル）で自動分類することを想定したスクリプトです。
+
+現時点では、LLM API への接続は行わず、商品名のキーワードに基づく簡易ロジック＋フォールバック用のランダムカテゴリでモック分類を行います。
+将来的に OpenAI / Gemini などと連携する際は、このスクリプトの `classify_with_llm()` を拡張してください。
+
+**使用方法:**
+
+```bash
+python3 scripts/auto_categorizer.py
+```
+
+**機能:**
+
+- `data/products.json` を読み込み
+- カテゴリが「その他」または空欄の商品を自動抽出
+- `classify_with_llm(product_name)` でカテゴリ候補を算出
+- 結果を各商品の `category` フィールドに書き込み、`products.json` を上書き保存
+
+**環境変数:**
+
+```env
+# 将来のLLM API連携用（現在のモック実装では必須ではありません）
+LLM_API_KEY=your-llm-api-key-here
+```
+
+- 現在の実装では `LLM_API_KEY` が未設定でも警告のみを表示し、モック分類を実行します。
+- 実際に外部LLMと連携する際は、このキーを用いて HTTP クライアントから API を呼び出す構造に変更してください。
+
 ## プロジェクト構造
 
 ```
@@ -265,7 +295,8 @@ price-watcher/
 │   ├── update_prices.py       # 価格更新スクリプト
 │   ├── add_products.py        # 大量商品追加ツール
 │   ├── import_ranking.py      # キーワード検索による商品収集ツール
-│   ├── category_manager.py   # カテゴリ管理ツール（データ品質保証）
+│   ├── category_manager.py    # カテゴリ管理ツール（データ品質保証）
+│   ├── auto_categorizer.py    # AI自動分類スクリプト（LLM連携準備）
 │   ├── bulk_runner.sh        # バルク商品追加スクリプト（5,000件を目指す）
 │   ├── urls.txt               # 商品URLリスト（手動編集）
 │   └── keywords.txt           # 検索キーワードリスト（手動編集）
