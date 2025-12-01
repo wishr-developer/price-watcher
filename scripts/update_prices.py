@@ -117,13 +117,18 @@ def fallback_random_price(current_price: int) -> int:
 
 
 def update_prices():
-    """商品価格を更新する"""
+    """商品価格を更新する（CI環境では先頭50件のみ処理）"""
+    print("INFO: 価格更新を開始します（CIタイムアウト防止のため先頭50件に制限）")
+
     # JSONファイルを読み込む
     with open(DATA_FILE, "r", encoding="utf-8") as f:
         products = json.load(f)
 
+    # CIタイムアウト対策: 先頭50件のみ処理
+    limited_products = products[:50]
+
     # 各商品の価格を更新
-    for product in products:
+    for product in limited_products:
         old_price = product["currentPrice"]
         new_price = None
 
@@ -159,7 +164,7 @@ def update_prices():
 
         print(f"更新完了: {product['name']} - ¥{old_price:,} -> ¥{new_price:,}")
 
-    # JSONファイルに保存
+    # JSONファイルに保存（全商品を書き戻す）
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(products, f, ensure_ascii=False, indent=2)
 

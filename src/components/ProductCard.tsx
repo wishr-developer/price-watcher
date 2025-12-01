@@ -13,6 +13,7 @@ interface ProductCardProps {
   onAlertClick?: (product: Product) => void;
   onFavoriteToggle?: (asin: string, isFavorite: boolean) => void;
   isPriority?: boolean;
+  categoryLabel?: string;
 }
 
 type PeriodType = '7D' | '30D' | 'ALL';
@@ -110,6 +111,7 @@ export default function ProductCard({
   onAlertClick,
   onFavoriteToggle,
   isPriority = false,
+  categoryLabel,
 }: ProductCardProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('ALL');
   const [isFavorite, setIsFavorite] = useState(false);
@@ -268,6 +270,15 @@ export default function ProductCard({
         <h3 className="text-sm md:text-base font-medium text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors min-h-[2.25rem]">
           {product.name}
         </h3>
+
+        {/* カテゴリバッジ（日本語ラベル） */}
+        {categoryLabel && (
+          <div className="mt-0.5">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200">
+              {categoryLabel}
+            </span>
+          </div>
+        )}
 
         {/* 価格ブロック */}
         <div className="flex flex-col gap-1">

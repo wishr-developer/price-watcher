@@ -2,10 +2,11 @@
 
 import { Search, ShoppingBag, X, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocale } from 'next-intl';
 import { useCategory } from '@/contexts/CategoryContext';
 import { usePathname } from 'next/navigation';
+import categoryLabelsJson from '@/data/category_labels.json';
 
 /**
  * お気に入りボタンコンポーネント（お気に入り数を表示）
@@ -71,19 +72,7 @@ interface HeaderProps {
 // デフォルトの空関数
 const noop = () => {};
 
-// カテゴリリスト
-const categories = [
-  { id: 'all', label: 'すべて' },
-  { id: 'ガジェット', label: 'ガジェット' },
-  { id: '家電', label: '家電' },
-  { id: 'キッチン', label: 'キッチン' },
-  { id: 'ゲーム', label: 'ゲーム' },
-  { id: 'ヘルスケア', label: 'ヘルスケア' },
-  { id: 'ビューティー', label: 'ビューティー' },
-  { id: '食品', label: '食品' },
-  { id: '文房具', label: '文房具' },
-  { id: 'その他', label: 'その他' },
-];
+const categoryLabelMap = categoryLabelsJson as Record<string, string>;
 
 export default function Header({ onSearch = noop, onRankingClick = noop }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,6 +84,18 @@ export default function Header({ onSearch = noop, onRankingClick = noop }: Heade
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const { selectedCategory, setSelectedCategory } = useCategory();
   const locale = useLocale();
+
+  // カテゴリリスト（Tier1コード→日本語ラベル）
+  const categories = useMemo(
+    () => [
+      { id: 'all', label: 'すべて' },
+      ...Object.entries(categoryLabelMap).map(([id, label]) => ({
+        id,
+        label,
+      })),
+    ],
+    [],
+  );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

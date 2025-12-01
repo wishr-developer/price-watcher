@@ -7,6 +7,7 @@ import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { Product } from '@/types/product';
 import { Crown, AlertCircle, RefreshCw, Search, X } from 'lucide-react';
 import { useCategory } from '@/contexts/CategoryContext';
+import categoryLabelsJson from '@/data/category_labels.json';
 
 /**
  * Deal Scoreを計算する関数
@@ -40,6 +41,8 @@ type TabType = 'drops' | 'new' | 'ranking' | 'all';
 // ページネーションは仮想スクロールで不要のため削除
 // const ITEMS_PER_PAGE = 20;
 
+const categoryLabelMap = categoryLabelsJson as Record<string, string>;
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,19 +53,17 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const { selectedCategory, setSelectedCategory } = useCategory();
 
-  // カテゴリリスト（Header.tsxと同期）
-  const categories = useMemo(() => [
-    { id: 'all', label: 'すべて' },
-    { id: 'ガジェット', label: 'ガジェット' },
-    { id: '家電', label: '家電' },
-    { id: 'キッチン', label: 'キッチン' },
-    { id: 'ゲーム', label: 'ゲーム' },
-    { id: 'ヘルスケア', label: 'ヘルスケア' },
-    { id: 'ビューティー', label: 'ビューティー' },
-    { id: '食品', label: '食品' },
-    { id: '文房具', label: '文房具' },
-    { id: 'その他', label: 'その他' },
-  ], []);
+  // カテゴリリスト（Header.tsxと同期/Tier1コード→日本語ラベル）
+  const categories = useMemo(
+    () => [
+      { id: 'all', label: 'すべて' },
+      ...Object.entries(categoryLabelMap).map(([id, label]) => ({
+        id,
+        label,
+      })),
+    ],
+    [],
+  );
 
   useEffect(() => { 
     const fetchProducts = async () => {
@@ -223,7 +224,7 @@ export default function Home() {
       const latest = p.currentPrice;
       const prev = history[history.length - 2].price;
       if (latest < prev) {
-        const category = p.category || "その他";
+        const category = p.category || 'OTHERS';
         categoryDrops[category] = (categoryDrops[category] || 0) + 1;
       }
     });
@@ -250,7 +251,7 @@ export default function Home() {
     // カテゴリフィルター（最初に適用）
     if (selectedCategory && selectedCategory !== 'all') {
       result = result.filter((p: Product) => {
-        const category = p.category || "その他";
+        const category = p.category || 'OTHERS';
         return category === selectedCategory;
       });
     }
@@ -628,7 +629,14 @@ export default function Home() {
               <p className="text-sm text-gray-700 text-center">
                 今日は<strong className="text-blue-700 font-bold">{stats.dropsToday}</strong>商品が値下がりしています。
                 {stats.topCategory && stats.topCategoryCount > 0 && (
-                  <span> 特に<strong className="text-purple-700 font-bold">{stats.topCategory}</strong>カテゴリが狙い目です。</span>
+                  <span>
+                    {' '}
+                    特に
+                    <strong className="text-purple-700 font-bold">
+                      {categoryLabelMap[stats.topCategory] || stats.topCategory}
+                    </strong>
+                    カテゴリが狙い目です。
+                  </span>
                 )}
               </p>
             </div>
@@ -790,17 +798,24 @@ export default function Home() {
                 <>
                   {/* 高密度グリッド表示（垂直カード） */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
-                    {filteredProducts.map((p, index) => (
-                      <ProductCard 
-                        key={p.id} 
-                        product={p} 
-                        isPriority={index < 6}
-                        onAlertClick={handleAlertClick}
-                        onFavoriteToggle={(asin, isFavorite) => {
-                          // お気に入り状態変更時の処理（必要に応じて実装）
-                        }}
-                      />
-                    ))}
+                    {filteredProducts.map((p, index) => {
+                      const categoryCode = p.category || 'OTHERS';
+                      const categoryLabel =
+                        categoryLabelMap[categoryCode] || categoryCode || categoryLabelMap.OTHERS;
+
+                      return (
+                        <ProductCard
+                          key={p.id}
+                          product={p}
+                          isPriority={index < 6}
+                          onAlertClick={handleAlertClick}
+                          onFavoriteToggle={(asin, isFavorite) => {
+                            // お気に入り状態変更時の処理（必要に応じて実装）
+                          }}
+                          categoryLabel={categoryLabel}
+                        />
+                      );
+                    })}
                   </div>
                 </>
               )}

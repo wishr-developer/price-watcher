@@ -2,26 +2,21 @@
 # -*- coding: utf-8 -*-
 
 """
-AI自動分類スクリプト
+AI自動分類スクリプト（自己学習型カテゴリ分類）
 
 data/products.json を読み込み、カテゴリが「その他」または未設定の商品だけを抽出し、
-外部LLM（大規模言語モデル）に投げることを想定した構造でカテゴリを自動付与します。
+src/data/category_map.json に定義されたキーワードマップを用いてカテゴリを自動付与します。
 
-現時点では実際のLLM APIは呼び出さず、classify_with_llm() 内で
-簡易なキーワードベースのモック分類を行います。
-
-将来的に OpenAI / Gemini などを利用する場合は、このファイルに
-HTTPクライアントを追加し、LLM_API_KEY 環境変数から取得したキーを利用してください。
+外部APIやLLMには依存せず、既存のデータのみを用いてスコアリング分類を行います。
 """
 
 import json
-import os
-import random
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Mapping
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 PRODUCTS_PATH = BASE_DIR / "data" / "products.json"
+CATEGORY_MAP_PATH = BASE_DIR / "src" / "data" / "category_map.json"
 
 
 def load_products() -> List[Dict[str, Any]]:
@@ -51,67 +46,78 @@ def is_unclassified(product: Dict[str, Any]) -> bool:
   return False
 
 
-def classify_with_llm(product_name: str) -> str:
+def load_category_map() -> Mapping[str, List[str]]:
+  """カテゴリマップ（category_map.json）を読み込む"""
+  if not CATEGORY_MAP_PATH.exists():
+    raise FileNotFoundError(f"category_map.json が見つかりません: {CATEGORY_MAP_PATH}")
+
+  with CATEGORY_MAP_PATH.open("r", encoding="utf-8") as f:
+    data = json.load(f)
+
+  # 想定形式: { "カテゴリ名": ["キーワード1", "キーワード2", ...], ... }
+  if not isinstance(data, dict):
+    raise ValueError("category_map.json の形式が不正です（dict ではありません）")
+  return data
+
+
+def classify_by_scoring(product_name: str, category_map: Mapping[str, List[str]]) -> str:
   """
-  LLM でカテゴリ分類することを想定したモック関数。
+  既存の category_map.json を用いてスコアリング分類を行う。
 
-  - 実運用ではここで外部APIを呼び出す。
-  - 今は簡易なキーワードマッチ + ランダムフォールバックでカテゴリを返す。
+  スコア = Σ (キーワードの出現回数 × キーワード長の重み)
+  - 商品名内に長いキーワードが複数回出現するカテゴリほどスコアが高くなる（長いフレーズを優遇）。
+  - 1カテゴリ内の全キーワードについてスコアを合算し、最大スコアのカテゴリを採用。
+  - 「その他」はスコアリング対象から一旦外し、他カテゴリがマッチしない場合のみフォールバックとして使用する。
   """
-  name_lower = product_name.lower()
+  name = product_name or ""
+  if not name:
+    return "その他"
 
-  # キーワードベースの簡易分類
-  rules = [
-    ("laptop", "Electronics"),
-    ("macbook", "Electronics"),
-    ("ipad", "Electronics"),
-    ("iphone", "Electronics"),
-    ("usb", "Electronics"),
-    ("ssd", "Electronics"),
-    ("memory", "Electronics"),
-    ("keyboard", "Electronics"),
-    ("mouse", "Electronics"),
-    ("monitor", "Electronics"),
-    ("chair", "Home"),
-    ("desk", "Home"),
-    ("sofa", "Home"),
-    ("lamp", "Home"),
-    ("light", "Home"),
-    ("pan", "Kitchen"),
-    ("pot", "Kitchen"),
-    ("kitchen", "Kitchen"),
-    ("mug", "Kitchen"),
-    ("cup", "Kitchen"),
-    ("protein", "Health"),
-    ("vitamin", "Health"),
-    ("supplement", "Health"),
-    ("camp", "Outdoor"),
-    ("tent", "Outdoor"),
-  ]
+  name_norm = name.lower()
 
-  for keyword, category in rules:
-    if keyword in name_lower:
-      return category
+  best_category = "その他"
+  best_score = 0.0
 
-  # ここまででマッチしなければランダムに割り当て（モック）
-  fallback_categories = [
-    "Electronics",
-    "Home",
-    "Kitchen",
-    "Health",
-    "Outdoor",
-    "Fashion",
-  ]
-  return random.choice(fallback_categories)
+  for category, keywords in category_map.items():
+    # 「その他」はフォールバック用にのみ使用し、ここではスコアリング対象から除外
+    if category == "その他":
+      continue
+
+    if not isinstance(keywords, list):
+      continue
+
+    score = 0.0
+    for kw in keywords:
+      if not kw:
+        continue
+      kw_str = str(kw)
+      # キーワードも小文字化して部分一致を取る（日本語も一応lower()で揃える）
+      kw_norm = kw_str.lower()
+      # あまりに短いキーワード（1〜2文字）はノイズになりやすいので無視
+      if len(kw_norm) <= 2:
+        continue
+      if kw_norm in name_norm:
+        # 出現回数を数える（オーバーラップは無視）
+        occurrences = name_norm.count(kw_norm)
+        # キーワード長に基づく重み（長いフレーズを少し強めに評価）
+        base_len = len(kw_norm)
+        length_weight = base_len ** 1.2
+        score += occurrences * length_weight
+
+    if score > best_score:
+      best_score = score
+      best_category = category
+
+  # 1つもマッチしなければ「その他」
+  if best_score <= 0:
+    return "その他"
+
+  return best_category
 
 
 def main() -> None:
-  # 将来の本番運用のために環境変数をチェックしておく（今は未使用だが構造だけ用意）
-  llm_api_key = os.getenv("LLM_API_KEY")
-  if not llm_api_key:
-    print("[WARN] LLM_API_KEY が設定されていません。現在はモック分類のみを実行します。")
-
   products = load_products()
+  category_map = load_category_map()
   print(f"[INFO] 全商品数: {len(products)}")
 
   # 未分類の商品を抽出
@@ -132,7 +138,7 @@ def main() -> None:
     product = products[idx]
     name = product.get("name", "")
     before = product.get("category")
-    new_category = classify_with_llm(name)
+    new_category = classify_by_scoring(name, category_map)
     products[idx]["category"] = new_category
     updated_count += 1
     print(
