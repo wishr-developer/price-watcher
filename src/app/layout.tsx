@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/Footer";
 import { CategoryProvider } from "@/contexts/CategoryContext";
@@ -12,6 +13,14 @@ const WebVitals = dynamic(() => import("@/components/WebVitals"), {
 
 const GATracker = dynamic(() => import("@/components/GATracker"), {
   ssr: false,
+});
+
+// Poppinsフォントの設定
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
+  display: "swap",
 });
 
 const metadataBase = new URL('https://price-watcher-plum.vercel.app');
@@ -72,7 +81,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang="ja" suppressHydrationWarning className={poppins.variable}>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -98,7 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body className="flex flex-col min-h-screen bg-white text-slate-900" suppressHydrationWarning>
+      <body className={`${poppins.className} flex flex-col min-h-screen bg-white text-slate-900`} suppressHydrationWarning>
         <WebVitals />
         {isGAEnabled && <GATracker />}
         <CategoryProvider>
