@@ -66,8 +66,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // Google Search Console用（必要に応じて追加）
-    // google: 'your-verification-code',
+    google: 'HFQX07XJ6AWIutOvFEhHI68n6ait4ei8nchO3fFK4qY',
   },
 };
 
