@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 body {
-  @apply bg-[#FBFBFB] text-text-main antialiased font-serif;
+  @apply bg-[#F8F6F0] text-text-main antialiased font-serif;
   line-height: 1.7;
-  /* サブトルテクスチャ（布のような手触り感） */
+  /* 絵画的テクスチャ（キャンバスのような質感） */
   background-image: 
     repeating-linear-gradient(
       0deg,
-      rgba(0, 0, 0, 0.01) 0px,
+      rgba(0, 0, 0, 0.008) 0px,
       transparent 1px,
       transparent 2px,
-      rgba(0, 0, 0, 0.01) 3px
+      rgba(0, 0, 0, 0.008) 3px
     ),
     repeating-linear-gradient(
       90deg,
-      rgba(0, 0, 0, 0.01) 0px,
+      rgba(0, 0, 0, 0.008) 0px,
       transparent 1px,
       transparent 2px,
-      rgba(0, 0, 0, 0.01) 3px
+      rgba(0, 0, 0, 0.008) 3px
     );
   background-size: 4px 4px;
 }

@@ -194,10 +194,10 @@ export default function ProductCard({
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleCardClick}
-      className="group bg-white rounded-2xl shadow-soft hover:shadow-card transition-all duration-300 overflow-hidden flex flex-col h-full relative"
+      className="group bg-white rounded-3xl shadow-artistic hover:shadow-card transition-all duration-300 ease-out overflow-hidden flex flex-col h-full relative border border-gray-100/60"
     >
       {/* 画像（上部） */}
-      <div className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center overflow-hidden relative">
+      <div className="w-full aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100/50 flex items-center justify-center overflow-hidden relative border-b border-gray-100/40">
         {imageError ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
             <span className="text-sm font-medium">No Image</span>
@@ -233,7 +233,7 @@ export default function ProductCard({
       {/* 情報エリア（下部） */}
       <div className="p-3 flex flex-col gap-1.5 flex-1">
         {/* 商品名 */}
-        <h3 className="text-sm md:text-base font-medium text-text-main line-clamp-2 leading-tight group-hover:text-trust transition-colors min-h-[2.25rem]">
+        <h3 className="text-sm md:text-base font-normal text-text-main line-clamp-2 leading-tight group-hover:text-trust transition-colors min-h-[2.25rem]">
           {product.name}
         </h3>
 
@@ -251,25 +251,25 @@ export default function ProductCard({
           <div className="flex items-baseline gap-2.5 flex-wrap">
             {isCheaper ? (
               <>
-                <span className="text-base md:text-lg font-bold text-gray-500 line-through font-sans">
+                <span className="text-base md:text-lg font-semibold text-gray-500 line-through font-sans">
                   ¥{prev.toLocaleString()}
                 </span>
-                <span className="text-2xl font-bold text-gray-900 font-sans">
+                <span className="text-2xl font-semibold text-gray-900 font-sans">
                   ¥{latest.toLocaleString()}
                 </span>
                 {diff !== 0 && (
                   <>
-                    <span className="text-sm md:text-base font-bold text-sale font-sans">
+                    <span className="text-sm md:text-base font-semibold text-sale font-sans">
                       -{percentChange}%
                     </span>
-                    <span className="text-xs md:text-sm font-bold text-sale font-sans">
+                    <span className="text-xs md:text-sm font-semibold text-sale font-sans">
                       -¥{Math.abs(diff).toLocaleString()}
                     </span>
                   </>
                 )}
               </>
             ) : (
-              <span className="text-xl font-bold text-gray-900 font-sans">
+              <span className="text-xl font-semibold text-gray-900 font-sans">
                 ¥{latest.toLocaleString()}
               </span>
             )}

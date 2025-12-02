@@ -534,7 +534,7 @@ export default function Home() {
           product={selectedProduct} 
         />
       )}
-      <div className="pb-16 bg-[#FBFBFB] min-h-screen">
+      <div className="pb-16 bg-[#F8F6F0] min-h-screen">
         {/* 統計サマリーエリア（ヘッダー直下） */}
         <section className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-6 px-3 overflow-hidden">
           {/* 背景画像 */}
@@ -572,7 +572,7 @@ export default function Home() {
               </div>
 
               {/* 本日値下がり件数（価格アンカリング強調） */}
-              <div className="bg-gradient-to-br from-rose-50/60 to-pink-50/40 rounded-2xl p-6 border border-rose-100/50 shadow-soft relative overflow-hidden">
+              <div className="bg-gradient-to-br from-rose-50/60 to-pink-50/40 rounded-2xl p-6 border border-rose-100/50 shadow-soft relative overflow-hidden animate-pulse-slow">
                 <div className="absolute top-2 right-2">
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold text-white bg-cta/90 shadow-sm">
                     🔥 お得

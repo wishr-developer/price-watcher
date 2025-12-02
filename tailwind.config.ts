@@ -14,9 +14,9 @@ const config: Config = {
         sans: ['var(--font-sans)', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       colors: {
-        background: "#FBFBFB", // 非常に薄いウォームグレー/アイボリー
+        background: "#F8F6F0", // 暖かみのあるアイボリー/クリーム色（キャンバス背景）
         surface: "#FFFFFF", // 純白（カード/浮上）
-        border: "#E5E5E5", // 柔らかいボーダー
+        border: "#E8E6E0", // 柔らかいボーダー
         // プライマリ（信頼）- 深いネイビーブルー
         'trust': {
           DEFAULT: '#1a3455', // 深いネイビーブルー（伝統的なエレガンス）
@@ -29,18 +29,18 @@ const config: Config = {
           light: '#F5E6D3', // 薄いゴールド
           dark: '#8B6914', // 濃いゴールド
         },
-        // 行動喚起カラー（控えめな赤）
+        // 行動喚起カラー（高彩度のホットピンク/マゼンタ）
         'cta': {
-          DEFAULT: '#D9534F', // 控えめな赤
-          orange: '#D9534F', // 控えめな赤
-          light: '#F5E6E5', // 薄い赤
+          DEFAULT: '#FF0080', // 高彩度のホットピンク/マゼンタ
+          orange: '#FF0080', // 高彩度のホットピンク/マゼンタ
+          light: '#FFE5F5', // 薄いピンク
         },
         primary: "#1a3455", // 深いネイビーブルー
-        danger: "#D9534F",  // 控えめな赤
-        'price-drop': '#D9534F', // 値下がり（控えめな赤）
+        danger: "#FF0080",  // 高彩度のホットピンク/マゼンタ
+        'price-drop': '#FF0080', // 値下がり（高彩度のホットピンク/マゼンタ）
         'price-up': '#1a3455', // 値上がり（ネイビー）
-        'sale': '#D9534F', // セール強調色（控えめな赤）
-        'sale-bg': '#F5E6E5', // セール背景色（薄い赤）
+        'sale': '#FF0080', // セール強調色（高彩度のホットピンク/マゼンタ）
+        'sale-bg': '#FFE5F5', // セール背景色（薄いピンク）
         // AI Deal Score用メタリック配色
         'score-metallic': {
           gold: '#B8860B', // 真鍮ゴールド
@@ -65,13 +65,15 @@ const config: Config = {
         }
       },
       boxShadow: {
-        'soft': '0 2px 20px -5px rgba(0, 0, 0, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.05)',
-        'card': '0 2px 12px -2px rgba(0, 0, 0, 0.06), 0 4px 16px -4px rgba(0, 0, 0, 0.04)',
+        'soft': '0 4px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 40px -12px rgba(0, 0, 0, 0.08)',
+        'card': '0 3px 20px -4px rgba(0, 0, 0, 0.1), 0 6px 30px -8px rgba(0, 0, 0, 0.06)',
+        'artistic': '0 2px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 25px -6px rgba(0, 0, 0, 0.05)',
       },
       borderRadius: {
-        'xl': '1rem',
-        '2xl': '1.25rem',
-        '3xl': '1.5rem',
+        'xl': '1.25rem',
+        '2xl': '1.75rem',
+        '3xl': '2rem',
+        '4xl': '2.5rem',
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

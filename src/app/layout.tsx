@@ -115,7 +115,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </>
         )}
       </head>
-      <body className={`${playfairDisplay.className} flex flex-col min-h-screen bg-[#FBFBFB] text-text-main`} suppressHydrationWarning>
+      <body className={`${playfairDisplay.className} flex flex-col min-h-screen bg-[#F8F6F0] text-text-main`} suppressHydrationWarning>
         <WebVitals />
         {isGAEnabled && <GATracker />}
         <CategoryProvider>
