@@ -236,7 +236,7 @@ export default function Header({ onSearch = noop, onRankingClick = noop }: Heade
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[#F8F6F0] border-b border-gray-200/40">
+      <header className="sticky top-0 z-50 bg-[#F8F6F0] border-b border-gray-200/40 shadow-sm">
         <div className="container mx-auto px-3 h-16 flex items-center justify-between gap-4">
           {/* ロゴ */}
           <Link href={`/${locale}`} className="flex items-baseline gap-1 group" aria-label="TRENDIX ホームページに移動">

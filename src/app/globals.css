@@ -3,10 +3,33 @@
 @tailwind utilities;
 
 body {
-  @apply bg-[#F8F6F0] text-text-main antialiased font-serif;
+  @apply text-text-main antialiased font-serif;
   line-height: 1.7;
-  /* 絵画的テクスチャ（キャンバスのような質感） */
-  background-image: 
+  /* 豊かな背景デザイン（グラデーション + テクスチャ） */
+  background: 
+    /* 垂直方向の穏やかなグラデーション（奥行きを生む） */
+    linear-gradient(
+      180deg,
+      #F8F6F0 0%,
+      #F6F4F0 25%,
+      #F4F2EE 50%,
+      #F3F3F3 75%,
+      #F3F3F3 100%
+    ),
+    /* 粒状ノイズテクスチャ */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E"),
+    /* 装飾的なドットパターン（非常に控えめ） */
+    radial-gradient(
+      circle at 20% 30%,
+      rgba(184, 134, 11, 0.02) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(26, 52, 85, 0.015) 0%,
+      transparent 50%
+    ),
+    /* 既存のグリッドパターン */
     repeating-linear-gradient(
       0deg,
       rgba(0, 0, 0, 0.008) 0px,
@@ -21,12 +44,41 @@ body {
       transparent 2px,
       rgba(0, 0, 0, 0.008) 3px
     );
-  background-size: 4px 4px;
+  background-size: 100% 100%, 200px 200px, 100% 100%, 100% 100%, 4px 4px, 4px 4px;
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 /* 背景画像の自然な表示 */
 section {
   position: relative;
+}
+
+/* ヒーロー背景画像のフェードイン・アウトアニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.2;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 0.2;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.hero-background-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.hero-background-fade-out {
+  animation: fadeOut 0.5s ease-in-out;
 }
 
 /* セリフ体の可読性向上 */

@@ -49,6 +49,14 @@ type TabType = 'drops' | 'new' | 'ranking' | 'all';
 
 const categoryLabelMap = categoryLabelsJson as Record<string, string>;
 
+// ヒーローセクション用の背景画像リスト（フランス/イタリアの街並み）
+const heroBackgroundImages = [
+  '/images/paris_street_blurred.jpg',
+  '/images/street1.jpg',
+  '/images/street2.jpg',
+  '/images/street3.jpg',
+];
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,6 +66,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { selectedCategory, setSelectedCategory } = useCategory();
+  
+  // ヒーロー背景画像の状態管理
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
 
   // カテゴリリスト（Header.tsxと同期/Tier1コード→日本語ラベル）
   const categories = useMemo(
@@ -124,6 +136,23 @@ export default function Home() {
     };
     
     fetchProducts();
+  }, []);
+
+  // ヒーロー背景画像の自動切り替え（30秒ごと）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsFading(true);
+      
+      // フェードアウト完了後に画像を切り替え
+      setTimeout(() => {
+        setCurrentImageIndex((prevIndex) => 
+          (prevIndex + 1) % heroBackgroundImages.length
+        );
+        setIsFading(false);
+      }, 500); // フェードアウトの時間（500ms）
+    }, 30000); // 30秒ごとに切り替え
+
+    return () => clearInterval(interval);
   }, []);
   
   // リトライ関数
@@ -536,12 +565,14 @@ export default function Home() {
       )}
       <div className="pb-16 bg-[#F8F6F0] min-h-screen">
         {/* 統計サマリーエリア（ヘッダー直下） */}
-        <section className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-6 px-3 overflow-hidden">
-          {/* 背景画像 */}
+        <section className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-8 md:py-12 px-3 overflow-hidden">
+          {/* 背景画像（動的切り替え） */}
           <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+            className={`absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 transition-opacity duration-500 ${
+              isFading ? 'opacity-0' : 'opacity-20'
+            }`}
             style={{
-              backgroundImage: "url('/images/paris_street_blurred.jpg')",
+              backgroundImage: `url('${heroBackgroundImages[currentImageIndex]}')`,
             }}
             aria-hidden="true"
           ></div>
@@ -664,7 +695,7 @@ export default function Home() {
         )}
 
         {/* エレガントな区切り */}
-        <div className="border-t border-gray-200/50 my-8"></div>
+        <div className="border-t border-gray-200/50 my-10 md:my-12"></div>
 
         {/* タブ切り替えUI */}
         <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
