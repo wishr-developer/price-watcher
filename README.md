@@ -281,7 +281,7 @@ python3 scripts/auto_categorizer.py
 ## プロジェクト構造
 
 ```
-price-watcher/
+trendix/
 ├── data/
 │   └── products.json          # 商品データ（ID, 商品名, 価格, 履歴等）
 ├── scripts/

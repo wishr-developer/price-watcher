@@ -5,15 +5,14 @@ const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // 画像最適化のパフォーマンス設定
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
+    // リモート画像のホスト名設定（重複を削除して最適化）
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'm.media-amazon.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images-na.ssl-images-amazon.com',
+        hostname: '**.media-amazon.com',
         pathname: '/**',
       },
       {
@@ -23,7 +22,17 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: '**.media-amazon.com',
+        hostname: '**.amazon.co.jp',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.amazon.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.amazon-adsystem.com',
         pathname: '/**',
       },
     ],

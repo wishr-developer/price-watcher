@@ -49,7 +49,7 @@ function FavoritesPageContent({ allProducts }: FavoritesPageClientProps) {
 
   return (
     <>
-      <Header onSearch={handleSearch} />
+      <Header searchQuery={searchQuery} onSearch={handleSearch} />
       <FavoritesList 
         allProducts={allProducts} 
         onAlertClick={handleAlertClick}

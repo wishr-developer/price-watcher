@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Header from "@/components/Header";
 
 /**
  * プライバシーポリシーページ
@@ -6,17 +7,7 @@ import Link from "next/link";
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* ヘッダー */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link
-            href="/"
-            className="flex items-baseline gap-1"
-          >
-            <span className="text-2xl font-bold tracking-tight text-slate-900">TRENDIX</span>
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       {/* メインコンテンツ */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

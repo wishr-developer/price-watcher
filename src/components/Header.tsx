@@ -8,13 +8,22 @@ import { useCategory } from '@/contexts/CategoryContext';
 import { usePathname } from 'next/navigation';
 import categoryLabelsJson from '@/data/category_labels.json';
 
+// useLocaleの安全なラッパー（NextIntlClientProviderの外でも動作するように）
+function useSafeLocale(): string {
+  try {
+    return useLocale();
+  } catch {
+    return 'ja'; // デフォルトロケール
+  }
+}
+
 /**
  * お気に入りボタンコンポーネント（お気に入り数を表示）
  */
 function FavoriteButton() {
   const [favoriteCount, setFavoriteCount] = useState(0);
   const pathname = usePathname();
-  const locale = useLocale();
+  const locale = useSafeLocale();
 
   // localStorageからお気に入り数を取得
   useEffect(() => {
@@ -65,6 +74,7 @@ function FavoriteButton() {
 }
 
 interface HeaderProps {
+  searchQuery?: string; // 親コンポーネントから検索クエリを受け取る
   onSearch?: (query: string) => void;
   onRankingClick?: () => void;
 }
@@ -74,8 +84,11 @@ const noop = () => {};
 
 const categoryLabelMap = categoryLabelsJson as Record<string, string>;
 
-export default function Header({ onSearch = noop, onRankingClick = noop }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+export default function Header({ searchQuery: externalSearchQuery, onSearch = noop, onRankingClick = noop }: HeaderProps) {
+  // 外部から渡されたsearchQueryを使用、なければローカルstateを使用（後方互換性のため）
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
+  // externalSearchQueryが明示的に渡されている場合（undefinedでない場合）はそれを使用
+  const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : localSearchQuery;
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -83,7 +96,7 @@ export default function Header({ onSearch = noop, onRankingClick = noop }: Heade
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const { selectedCategory, setSelectedCategory } = useCategory();
-  const locale = useLocale();
+  const locale = useSafeLocale();
 
   // カテゴリリスト（Tier1コード→日本語ラベル）
   const categories = useMemo(
@@ -99,8 +112,14 @@ export default function Header({ onSearch = noop, onRankingClick = noop }: Heade
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setSearchQuery(value);
-    if (onSearch) {
+    // 外部からsearchQueryが渡されている場合は、親のstateを更新
+    // そうでない場合はローカルstateを更新（後方互換性）
+    if (externalSearchQuery !== undefined) {
+      // 外部からsearchQueryが渡されている場合、親のstateを更新
+      onSearch(value);
+    } else {
+      // 外部からsearchQueryが渡されていない場合、ローカルstateを更新
+      setLocalSearchQuery(value);
       onSearch(value);
     }
   };
@@ -236,7 +255,7 @@ export default function Header({ onSearch = noop, onRankingClick = noop }: Heade
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[#F8F6F0] border-b border-gray-200/40 shadow-sm">
+      <header className="sticky top-0 z-50 bg-[#F8F6F0] border-b border-gray-200/30 shadow-md">
         <div className="container mx-auto px-3 h-16 flex items-center justify-between gap-4">
           {/* ロゴ */}
           <Link href={`/${locale}`} className="flex items-baseline gap-1 group" aria-label="TRENDIX ホームページに移動">

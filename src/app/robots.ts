@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://price-watcher-plum.vercel.app';
+  const baseUrl = 'https://trendix.vercel.app';
 
   return {
     rules: {

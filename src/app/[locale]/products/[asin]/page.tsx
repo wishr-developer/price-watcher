@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import fs from 'fs';
 import path from 'path';
+import Header from '@/components/Header';
 import { Product } from '@/types/product';
 
 /**
@@ -133,6 +134,7 @@ export default async function ProductDetailPage({
 
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
+      <Header />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
           {/* 商品情報 */}

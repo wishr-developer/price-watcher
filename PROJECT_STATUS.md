@@ -3,7 +3,7 @@
 ## 📊 プロジェクト概要
 
 **サイト名**: XIORA TREND  
-**URL**: https://price-watcher-plum.vercel.app  
+**URL**: https://trendix.vercel.app  
 **目的**: Amazon商品の価格変動を24時間監視し、最安値トレンドをリアルタイム速報するECメディアサイト
 
 ---
@@ -164,7 +164,7 @@
 ## 📁 プロジェクト構造
 
 ```
-price-watcher/
+trendix/
 ├── src/
 │   ├── app/
 │   │   ├── api/

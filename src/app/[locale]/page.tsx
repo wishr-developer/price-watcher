@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import ProductCard from '@/components/ProductCard';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import Header from '@/components/Header';
 import { Product } from '@/types/product';
 import { Crown, AlertCircle, RefreshCw, Search, X } from 'lucide-react';
 import { useCategory } from '@/contexts/CategoryContext';
@@ -60,6 +61,7 @@ const heroBackgroundImages = [
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -70,6 +72,20 @@ export default function Home() {
   // ヒーロー背景画像の状態管理
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
+
+  // 検索クエリの変更をハンドル
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  // 検索クエリのデバウンス（300ms）
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // カテゴリリスト（Header.tsxと同期/Tier1コード→日本語ラベル）
   const categories = useMemo(
@@ -291,9 +307,9 @@ export default function Home() {
       });
     }
 
-    // 検索フィルター
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // 検索フィルター（デバウンス済みのクエリを使用）
+    if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.trim().toLowerCase();
       result = result.filter((p: Product) => {
         const name = p.name.toLowerCase();
         const isMatch = name.includes(query);
@@ -391,7 +407,7 @@ export default function Home() {
     }
 
     return finalResult;
-  }, [uniqueProducts, searchQuery, activeTab, selectedCategory]);
+  }, [uniqueProducts, debouncedSearchQuery, activeTab, selectedCategory]);
 
   // お気に入り商品を取得
   const favoriteProducts = useMemo(() => {
@@ -463,7 +479,7 @@ export default function Home() {
       });
 
     // 動的なBreadcrumbList（カテゴリフィルターに応じて変更）
-    const baseUrl = 'https://price-watcher-plum.vercel.app';
+    const baseUrl = 'https://trendix.vercel.app';
     const breadcrumbItems = [
       {
         '@type': 'ListItem',
@@ -509,11 +525,11 @@ export default function Home() {
       const categoryLabel = categories.find(c => c.id === selectedCategory)?.label || selectedCategory;
       return `${categoryLabel} | ${baseTitle}`;
     }
-    if (searchQuery) {
-      return `「${searchQuery}」の検索結果 | ${baseTitle}`;
+    if (debouncedSearchQuery) {
+      return `「${debouncedSearchQuery}」の検索結果 | ${baseTitle}`;
     }
     return baseTitle;
-  }, [selectedCategory, searchQuery, categories]);
+  }, [selectedCategory, debouncedSearchQuery, categories]);
 
   // ページタイトルを動的に更新
   useEffect(() => {
@@ -534,6 +550,8 @@ export default function Home() {
 
   return (
     <>
+      {/* ヘッダー（検索機能付き） */}
+      <Header searchQuery={searchQuery} onSearch={handleSearch} />
 
       {/* 構造化データ（JSON-LD） */}
       {structuredData.products.length > 0 && (
@@ -563,7 +581,7 @@ export default function Home() {
           product={selectedProduct} 
         />
       )}
-      <div className="pb-16 bg-[#F8F6F0] min-h-screen">
+      <div className="pb-16 min-h-screen">
         {/* 統計サマリーエリア（ヘッダー直下） */}
         <section className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-8 md:py-12 px-3 overflow-hidden">
           {/* 背景画像（動的切り替え） */}
@@ -622,11 +640,10 @@ export default function Home() {
               </div>
             </div>
           </div>
-          </div>
         </section>
 
         {/* 本日のトレンド（TOP3カルーセル） */}
-        {trendProducts.length > 0 && !searchQuery && (
+        {trendProducts.length > 0 && !debouncedSearchQuery && (
           <section className="bg-white/90 backdrop-blur-sm border-b border-gray-200/50 py-6 md:py-8 px-4 md:px-6">
             <div className="container mx-auto max-w-[1920px]">
               <div className="flex items-center gap-2 mb-4">
@@ -722,21 +739,21 @@ export default function Home() {
         {/* 商品グリッド */}
         <div className="container mx-auto max-w-[1920px] px-4 md:px-6 py-8 md:py-10">
           {/* 検索結果・カテゴリフィルター情報 */}
-          {(searchQuery || (selectedCategory && selectedCategory !== 'all')) && !isLoading && !error && (
+          {(debouncedSearchQuery || (selectedCategory && selectedCategory !== 'all')) && !isLoading && !error && (
             <div className="mb-6">
-              {searchQuery && (
+              {debouncedSearchQuery && (
                 <h2 className="text-lg font-bold text-slate-900 mb-1">
-                  「{searchQuery}」の検索結果
+                  「{debouncedSearchQuery}」の検索結果
                 </h2>
               )}
-              {selectedCategory && selectedCategory !== 'all' && !searchQuery && (
+              {selectedCategory && selectedCategory !== 'all' && !debouncedSearchQuery && (
                 <h2 className="text-lg font-bold text-slate-900 mb-1">
                   {categories.find(c => c.id === selectedCategory)?.label || selectedCategory}カテゴリ
                 </h2>
               )}
-              {searchQuery && selectedCategory && selectedCategory !== 'all' && (
+              {debouncedSearchQuery && selectedCategory && selectedCategory !== 'all' && (
                 <h2 className="text-lg font-bold text-slate-900 mb-1">
-                  「{searchQuery}」の検索結果（{categories.find(c => c.id === selectedCategory)?.label || selectedCategory}カテゴリ）
+                  「{debouncedSearchQuery}」の検索結果（{categories.find(c => c.id === selectedCategory)?.label || selectedCategory}カテゴリ）
                 </h2>
               )}
               <span className="text-sm text-gray-500">
@@ -796,9 +813,9 @@ export default function Home() {
                     
                     {/* サブメッセージ */}
                     <p className="text-gray-600 mb-6 leading-relaxed">
-                      {searchQuery ? (
+                      {debouncedSearchQuery ? (
                         <>
-                          「<span className="font-semibold text-gray-900">{searchQuery}</span>」に一致する商品は見つかりませんでした。
+                          「<span className="font-semibold text-gray-900">{debouncedSearchQuery}</span>」に一致する商品は見つかりませんでした。
                           <br />
                           別のキーワードで検索するか、フィルターを変更してお試しください。
                         </>
@@ -821,7 +838,7 @@ export default function Home() {
                     
                     {/* アクションボタン */}
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      {(searchQuery || (selectedCategory && selectedCategory !== 'all')) && (
+                      {(debouncedSearchQuery || (selectedCategory && selectedCategory !== 'all')) && (
                         <button
                           onClick={() => {
                             setSearchQuery('');

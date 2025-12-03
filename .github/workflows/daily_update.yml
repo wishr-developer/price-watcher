@@ -29,17 +29,19 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: 価格を更新
+        run: |
+          python scripts/update_prices.py
+
       - name: 変更をコミット＆プッシュ
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .
+          git add data/products.json
           if git diff --staged --quiet; then
             echo "変更がありませんでした"
           else
             git commit -m "Update prices [skip ci]"
-            git push origin HEAD:${GITHUB_REF#refs/heads/}
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${GITHUB_REF#refs/heads/}
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
