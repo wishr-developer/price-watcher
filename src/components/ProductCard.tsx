@@ -276,7 +276,12 @@ function ProductCard({
 }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(isPriority); // 優先画像は初期表示
+  
+  // 画像URLの検証
+  const isValidImageUrl = product.imageUrl && 
+    product.imageUrl.startsWith('http') && 
+    product.imageUrl.length > 10;
   
   // ============================================
   // 価格表示の信頼性確保（設計ルール固定）
@@ -464,7 +469,7 @@ function ProductCard({
     >
       {/* DAISO型：画像（正方形・余白あり） - カード全体がクリック可能なため、画像もクリック可能 */}
       <div className="w-full aspect-square bg-gray-50 flex items-center justify-center overflow-hidden relative">
-        {imageError ? (
+        {!isValidImageUrl || imageError ? (
           <div className="w-full h-full aspect-square flex flex-col items-center justify-center text-gray-400">
             <span className="text-sm font-medium">No Image</span>
           </div>
@@ -473,23 +478,27 @@ function ProductCard({
             src={product.imageUrl}
             alt={product.name}
             fill
-            className="object-contain mix-blend-multiply p-3 transition-opacity duration-300"
-            style={{ opacity: imageLoaded ? 1 : 0 }}
+            className="object-contain mix-blend-multiply p-3"
             priority={isPriority}
-            loading={isPriority ? undefined : 'lazy'}
+            loading={isPriority ? 'eager' : 'lazy'}
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-            quality={90}
+            quality={85}
             placeholder="blur"
             blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PC9zdmc+"
             onLoad={() => {
               setImageLoaded(true);
+              setImageError(false);
             }}
-            onError={() => {
+            onError={(e) => {
+              // 開発環境のみエラーログ
+              if (process.env.NODE_ENV === 'development') {
+                console.error('画像読み込みエラー:', product.imageUrl, e);
+              }
               setImageError(true);
               setImageLoaded(false);
             }}
             aria-hidden="false"
-            unoptimized={false}
+            unoptimized={true}
           />
         )}
         {/* STEP 6: おすすめラベル（商品画像の左下） - 質感統一 */}

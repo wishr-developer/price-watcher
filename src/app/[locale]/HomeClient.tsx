@@ -842,7 +842,7 @@ export default function HomeClient({ initialProducts, isLoading: externalIsLoadi
                       <ProductCard
                         key={p.id}
                         product={p}
-                        isPriority={index < 12}
+                        isPriority={index < 16}
                         onAlertClick={handleAlertClick}
                         onFavoriteToggle={handleFavoriteToggle}
                         categoryLabel={categoryLabel}

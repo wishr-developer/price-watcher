@@ -12,6 +12,9 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     // 画像サイズの最適化（グリッド表示に最適化）
     imageSizes: [256, 384, 512, 640],
+    // 画像読み込みの高速化
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     // リモート画像のホスト名設定（重複を削除して最適化）
     remotePatterns: [
       {
