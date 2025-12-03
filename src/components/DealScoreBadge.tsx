@@ -17,7 +17,7 @@ export default function DealScoreBadge({ score }: DealScoreBadgeProps) {
 
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-gray-500 border border-gray-200 bg-gray-50">
-      <span>お得度</span>
+      <span>お得度（参考）</span>
       <span className="font-sans text-gray-600">{score}</span>
     </span>
   );

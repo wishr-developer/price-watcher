@@ -605,13 +605,16 @@ export default function Home() {
         {/* DAISO型：ヒーローセクション */}
         <section className="bg-white border-b border-gray-200 py-6 md:py-8 px-4">
           <div className="w-full">
-            {/* メインメッセージ（ファーストビュー：5秒で3つのことを理解） */}
+            {/* ファーストビュー：3つのことを確実に伝える構成 */}
             <div className="text-center mb-6">
               <h1 className="text-2xl md:text-3xl font-normal text-gray-900 mb-3 leading-tight">
                 今買っていいか、代わりに判断します
               </h1>
-              <p className="text-sm md:text-base text-gray-600 mb-4">
-                値下がりや価格の理由が分かり、安心して買い物できます
+              <p className="text-sm md:text-base text-gray-600 mb-2">
+                値下がりの理由が分かるから、安心して買える
+              </p>
+              <p className="text-xs md:text-sm text-gray-500">
+                比較も分析も不要。判断はTRENDIXが代わりにします
               </p>
             </div>
 

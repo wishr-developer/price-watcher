@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useEffect, memo } from 'react';
-import dynamic from 'next/dynamic';
 import { Bell, ExternalLink, Heart, Star, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Product } from '@/types/product';
 import DealScoreBadge from './DealScoreBadge';
-const ProductCardChart = dynamic(() => import('./ProductCardChart'), {
-  ssr: false,
-  loading: () => <div className="h-16 md:h-20 w-full bg-gray-50" />,
-});
 import { calculateDealScore } from '@/lib/dealScore';
 
 interface ProductCardProps {
@@ -21,7 +16,6 @@ interface ProductCardProps {
   categoryLabel?: string;
 }
 
-type PeriodType = '7D' | '30D' | 'ALL';
 
 // 「なぜお得か」表示用の閾値・設定（将来他の場所でも再利用可能）
 const DEAL_REASON_CONFIG = {
@@ -134,7 +128,6 @@ function ProductCard({
   isPriority = false,
   categoryLabel,
 }: ProductCardProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('ALL');
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -314,9 +307,9 @@ function ProductCard({
             )}
           </div>
 
-          {/* 「なぜお得か」表示（条件を満たす商品のみ、落ち着いたトーン） */}
+          {/* 判断コメント（安心材料として表示） */}
           {dealReason && (
-            <p className="text-xs text-gray-600 leading-relaxed mt-1">
+            <p className="text-xs text-gray-600 leading-relaxed mt-1 italic">
               {dealReason}
             </p>
           )}
