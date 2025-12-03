@@ -168,7 +168,7 @@ function isLowestPriceInRecentDays(product: Product, days: number): boolean {
  * - 小さな価格変動では評価を揺らさない
  * - ドラスティックな変更のみ判断を更新
  */
-function getRecommendationLevel(product: Product): 'recommended' | 'normal' {
+export function getRecommendationLevel(product: Product): 'recommended' | 'normal' {
   // 1. スポンサー広告ではない
   if (product.isSponsored === true) {
     return 'normal';
@@ -450,18 +450,18 @@ function ProductCard({
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleCardClick}
-      className={`group overflow-hidden flex flex-col h-full relative transition-all duration-200 rounded-lg ${
+      className={`group overflow-hidden flex flex-col h-full relative transition-all duration-200 ease-out rounded-lg will-change-transform ${
         isSponsored
           ? 'bg-gray-50/50 border border-gray-300/50 shadow-sm hover:shadow-md hover:-translate-y-0.5' // スポンサー広告：わずかに異なる背景
           : isRecommended
-          ? 'bg-white border border-gray-200 shadow-md hover:shadow-lg hover:-translate-y-1' // STEP 6: おすすめ商品：シャドウとhover効果を強化
+          ? 'bg-white border border-gray-200 shadow-md hover:shadow-lg hover:-translate-y-0.5' // おすすめ商品：影をほんの少しだけ強化
           : 'bg-white border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5' // 通常カード
       }`}
     >
-      {/* DAISO型：画像（正方形・余白あり） */}
+      {/* DAISO型：画像（正方形・余白あり） - カード全体がクリック可能なため、画像もクリック可能 */}
       <div className="w-full aspect-square bg-gray-50 flex items-center justify-center overflow-hidden relative">
         {imageError ? (
-          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+          <div className="w-full h-full aspect-square flex flex-col items-center justify-center text-gray-400">
             <span className="text-sm font-medium">No Image</span>
           </div>
         ) : (
@@ -472,14 +472,17 @@ function ProductCard({
             className="object-contain mix-blend-multiply p-3"
             priority={isPriority}
             loading={isPriority ? undefined : 'lazy'}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+            quality={85}
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PC9zdmc+"
             onError={() => setImageError(true)}
             aria-hidden="false"
           />
         )}
-        {/* STEP 6: おすすめラベル（商品画像の左下） */}
+        {/* STEP 6: おすすめラベル（商品画像の左下） - 質感統一 */}
         {isRecommended && (
-          <div className="absolute bottom-2 left-2 px-2 py-1 bg-white/95 backdrop-blur-sm border border-calm-navy/30 rounded-md z-10">
+          <div className="absolute bottom-2 left-2 px-2.5 py-1 bg-white/95 backdrop-blur-sm border border-calm-navy/20 rounded-lg z-10">
             <span className="text-xs font-medium text-calm-navy flex items-center gap-1">
               <CheckCircle2 size={12} className="text-calm-navy" />
               TRENDIXおすすめ
@@ -501,7 +504,7 @@ function ProductCard({
         )}
       </div>
 
-      {/* DAISO型：情報エリア（下部） */}
+      {/* DAISO型：情報エリア（下部） - 情報順序固定：バッジ→価格→差額→判断コメント→商品名→CTA */}
       <div className="p-4 flex flex-col gap-2 flex-1">
         {/* STEP 2: スポンサー広告表記（小さくグレー寄り） */}
         {isSponsored && (
@@ -509,10 +512,6 @@ function ProductCard({
             <span className="text-xs text-gray-400 font-normal">スポンサー広告</span>
           </div>
         )}
-        {/* 商品名（2〜3行まで、太字禁止） */}
-        <h3 className="text-sm text-gray-900 line-clamp-3 leading-relaxed">
-          {product.name}
-        </h3>
 
         {/* 
           ============================================
@@ -532,7 +531,7 @@ function ProductCard({
            ├ 差額（-¥◯◯ / %）
            └ 「Amazon.co.jp の現在価格」表記
         */}
-        <div className="bg-calm-light rounded-lg p-3 border border-gray-100 relative">
+        <div className="bg-gray-50 rounded-xl p-3 border border-gray-300/30 relative pb-4 border-b border-gray-200/60">
           {/* 判断バッジ（価格エリアの上部、価格とは別レイヤー） */}
           {shouldShowJudgmentBadge && (
             <div className="mb-2 flex justify-start">
@@ -590,8 +589,8 @@ function ProductCard({
               )}
             </div>
             {/* Amazon由来を示す（価格のすぐ下） */}
-            <div className="mt-1.5">
-              <span className="text-[11px] text-gray-400 font-normal">
+            <div className="mt-2">
+              <span className="text-[11px] text-gray-400/90 font-normal">
                 Amazon.co.jp の現在価格
               </span>
             </div>
@@ -605,9 +604,9 @@ function ProductCard({
             )}
           </div>
 
-          {/* 判断コメント（アイコン付き） - スポンサー広告・価格ズレの場合は表示しない */}
+          {/* 判断コメント（アイコン付き） - 最大2行、タブレット: text-xs - スポンサー広告・価格ズレの場合は表示しない */}
           {dealReason && isCheaper && discountAmount > 0 && !isSponsored && isPriceValid && (
-            <div className="flex items-start gap-1.5 mt-2 pt-2 border-t border-gray-200">
+            <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-gray-200/60">
               {dealReason.includes('値下がり') ? (
                 <Clock size={12} className="text-calm-blue-gray mt-0.5 flex-shrink-0" />
               ) : dealReason.includes('安め') ? (
@@ -615,14 +614,14 @@ function ProductCard({
               ) : (
                 <CheckCircle2 size={12} className="text-calm-blue-gray mt-0.5 flex-shrink-0" />
               )}
-              <p className="text-xs text-gray-600 leading-relaxed flex-1">
+              <p className="text-xs md:text-xs lg:text-xs text-gray-600 leading-relaxed flex-1 line-clamp-2">
                 {dealReason}
               </p>
             </div>
           )}
           {/* STEP 7 実装②: 「比較しなくていい」補足メッセージ（おすすめ商品のみ） */}
           {isRecommended && !isSponsored && (
-            <div className="mt-2 pt-2 border-t border-gray-200">
+            <div className="mt-3 pt-3 border-t border-gray-200/60">
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 今の条件なら、無理に待つ必要はなさそうです
               </p>
@@ -630,18 +629,19 @@ function ProductCard({
           )}
         </div>
 
-        {/* DAISO型：補足情報（AI Deal Score、レビューなど） */}
-        <div className="flex items-center gap-2 flex-wrap mt-auto">
-          {/* AI Deal Score：40点未満は非表示 */}
-          {dealScore >= 40 && <DealScoreBadge score={dealScore} />}
-          <div className="flex items-center gap-1">
-            <Star size={12} className="fill-gray-400 text-gray-400" />
-            <span className="text-xs text-gray-600 font-sans">4.5</span>
-            <span className="text-xs text-gray-500 font-sans">(128)</span>
-          </div>
+        {/* レビュー評価（価格エリアの下） */}
+        <div className="flex items-center gap-1 mt-3">
+          <Star size={12} className="fill-gray-400 text-gray-400" />
+          <span className="text-xs text-gray-600 font-sans">4.5</span>
+          <span className="text-xs text-gray-500 font-sans">(128)</span>
         </div>
 
-        {/* DAISO型：CTAボタン（シンプル・上品） */}
+        {/* 商品名（価格の後、CTAの前） - タブレット: 2行固定、モバイル: 2行、PC: 3行 */}
+        <h3 className="text-sm text-gray-900 line-clamp-2 md:line-clamp-2 lg:line-clamp-3 leading-relaxed mt-2">
+          {product.name}
+        </h3>
+
+        {/* DAISO型：CTAボタン（シンプル・上品） - 常にカード下部 */}
         <div className="mt-2 pt-2 border-t border-gray-200">
           {/* STEP 7 実装①: 購入直前の安心テキスト（おすすめ商品のみ） */}
           {isRecommended && !isSponsored && (
@@ -658,7 +658,7 @@ function ProductCard({
               // スクロール位置はブラウザが自動的に保持する
               window.open(product.affiliateUrl, '_blank', 'noopener,noreferrer');
             }}
-            className="w-full flex items-center justify-center gap-1 px-4 py-2 text-sm font-normal text-calm-navy bg-white border border-calm-blue-gray/30 hover:bg-calm-light hover:border-calm-navy transition-all rounded-md shadow-sm hover:shadow-md"
+            className="w-full flex items-center justify-center gap-1 px-4 py-3 md:py-3 lg:py-2 text-sm font-normal text-calm-navy bg-white border border-calm-blue-gray/30 hover:bg-calm-light hover:border-calm-navy transition-all rounded-md shadow-sm hover:shadow-md min-h-[44px]"
           >
             <span>商品を見る</span>
             <ExternalLink size={14} />
@@ -673,14 +673,26 @@ function ProductCard({
 // カスタム比較関数: trueを返すと再レンダリングをスキップ、falseを返すと再レンダリング
 const areEqual = (prevProps: ProductCardProps, nextProps: ProductCardProps) => {
   // 商品IDが同じで、その他の重要なpropsが変更されていない場合は再レンダリングをスキップ
-  return (
-    prevProps.product.id === nextProps.product.id &&
-    prevProps.product.currentPrice === nextProps.product.currentPrice &&
-    prevProps.isPriority === nextProps.isPriority &&
-    prevProps.categoryLabel === nextProps.categoryLabel &&
-    prevProps.product.priceHistory?.length === nextProps.product.priceHistory?.length &&
-    JSON.stringify(prevProps.product.priceHistory) === JSON.stringify(nextProps.product.priceHistory)
-  );
+  if (prevProps.product.id !== nextProps.product.id) return false;
+  if (prevProps.product.currentPrice !== nextProps.product.currentPrice) return false;
+  if (prevProps.isPriority !== nextProps.isPriority) return false;
+  if (prevProps.categoryLabel !== nextProps.categoryLabel) return false;
+  
+  // priceHistoryの比較（JSON.stringifyを避けて高速化）
+  const prevHistory = prevProps.product.priceHistory || [];
+  const nextHistory = nextProps.product.priceHistory || [];
+  if (prevHistory.length !== nextHistory.length) return false;
+  
+  // 最後の価格履歴のみ比較（完全な比較は不要）
+  if (prevHistory.length > 0 && nextHistory.length > 0) {
+    const prevLast = prevHistory[prevHistory.length - 1];
+    const nextLast = nextHistory[nextHistory.length - 1];
+    if (prevLast.price !== nextLast.price || prevLast.date !== nextLast.date) {
+      return false;
+    }
+  }
+  
+  return true;
 };
 
 export default memo(ProductCard, areEqual);

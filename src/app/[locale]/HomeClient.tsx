@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
-import ProductCard from "@/components/ProductCard";
+import ProductCard, { getRecommendationLevel } from "@/components/ProductCard";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import Header from "@/components/Header";
 import AlertModal from "@/components/AlertModal";
 import { Product } from "@/types/product";
-import { Crown, AlertCircle, RefreshCw, Search, X } from "lucide-react";
+import { Crown, AlertCircle, RefreshCw, Search, X, ChevronDown } from "lucide-react";
 import { useCategory } from "@/contexts/CategoryContext";
 import categoryLabelsJson from "@/data/category_labels.json";
 import { calculateDealScore } from "@/lib/dealScore";
@@ -64,16 +64,16 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
 
-  // 検索クエリの変更をハンドル
-  const handleSearch = (query: string) => {
+  // 検索クエリの変更をハンドル（useCallbackでメモ化）
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  };
+  }, []);
 
-  // 検索クエリのデバウンス（300ms）
+  // 検索クエリのデバウンス（150msに短縮）
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 300);
+    }, 150);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -265,7 +265,11 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
         break;
 
       case "ranking":
-        // ランキング（Deal Score順）
+        // STEP 6: おすすめ商品のみをフィルタリング
+        result = result.filter((p: Product) => {
+          return getRecommendationLevel(p) === 'recommended';
+        });
+        // おすすめ商品をDeal Score順にソート
         result.sort((a, b) => {
           const scoreA = calculateDealScore(a);
           const scoreB = calculateDealScore(b);
@@ -353,6 +357,21 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
     sortKey,
   ]);
 
+  // カテゴリラベルの事前計算（メモ化）で再レンダリング時の計算を削減
+  const productsWithCategoryLabels = useMemo(() => {
+    return filteredProducts.map((p) => {
+      const categoryCode = p.category || "OTHERS";
+      const categoryLabel =
+        categoryLabelMap[categoryCode] ||
+        categoryCode ||
+        categoryLabelMap.OTHERS;
+      return {
+        product: p,
+        categoryLabel,
+      };
+    });
+  }, [filteredProducts]);
+
   // トレンドTOP3（スコア順）
   const trendProducts = useMemo(() => {
     const sorted = [...uniqueProducts].sort((a, b) => {
@@ -363,22 +382,29 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
     return sorted.filter((p) => calculateDealScore(p) > 0).slice(0, 3);
   }, [uniqueProducts]);
 
-  const tabs: Array<{ id: TabType; label: string; emoji: string }> = [
-    { id: "drops", label: "値下がり速報", emoji: "🔥" },
-    { id: "new", label: "新着", emoji: "✨" },
-    { id: "ranking", label: "ランキング", emoji: "👑" },
-    { id: "all", label: "すべて", emoji: "" },
+  // DAISO型：タブUI（買い物サイトらしい名称）
+  const tabs: Array<{ id: TabType; label: string }> = [
+    { id: 'drops', label: 'お得な商品' },
+    { id: 'new', label: '新着' },
+    { id: 'ranking', label: 'おすすめ' },
+    { id: 'all', label: 'すべて' },
   ];
 
-  const handleAlertClick = (product: Product) => {
+  // useCallbackでメモ化して再レンダリングを防止
+  const handleAlertClick = useCallback((product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedProduct(null);
-  };
+  }, []);
+
+  // お気に入りトグルハンドラもメモ化
+  const handleFavoriteToggle = useCallback((asin: string, isFavorite: boolean) => {
+    // お気に入り状態変更時の処理（必要に応じて実装）
+  }, []);
 
   // 構造化データ（JSON-LD）の生成（表示中の商品のみに限定）
   const structuredData = useMemo(() => {
@@ -517,207 +543,106 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
           product={selectedProduct}
         />
       )}
-      <div className="pb-16 min-h-screen">
-        {/* 統計サマリーエリア（ヘッダー直下） */}
-        <section className="relative bg-white/80 backdrop-blur-sm border-b border-gray-200/50 py-8 md:py-12 px-3 overflow-hidden">
-          {/* 背景画像（動的切り替え） */}
-          <div
-            className={`absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 transition-opacity duration-500 ${
-              isFading ? "opacity-0" : "opacity-20"
-            }`}
-            style={{
-              backgroundImage: `url('${heroBackgroundImages[currentImageIndex]}')`,
-            }}
-            aria-hidden="true"
-          ></div>
-          {/* オーバーレイ（グラデーション） */}
-          <div
-            className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/60 to-white/80"
-            aria-hidden="true"
-          ></div>
-          {/* コンテンツ */}
-          <div className="container mx-auto max-w-[1920px] relative z-10">
-            {/* メインメッセージ */}
+      <div className="pb-16 min-h-screen bg-gray-50">
+        {/* DAISO型：ヒーローセクション */}
+        <section className="bg-gray-50 border-b border-gray-200 py-8 md:py-12 px-4">
+          <div className="w-full">
+            {/* ファーストビュー：3つのことを確実に伝える構成（行間広め・フェードイン） */}
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-text-main mb-2 leading-tight">
-                買い時の商品が、<span className="text-trust">一瞬でわかる。</span>
+              <h1 className="text-2xl md:text-3xl font-normal text-gray-900 mb-4 leading-relaxed hero-fade-in">
+                今買っていいか、代わりに判断します
               </h1>
-              <p className="text-gray-600 text-sm md:text-base mb-2">
-                Amazonの価格変動を24時間365日監視中
+              {/* STEP 3: 刺さる1行（少し目立つ程度） */}
+              <p className="text-base md:text-lg font-medium text-calm-navy mb-3 leading-relaxed hero-fade-in-delay-1">
+                迷う買い物だけ、TRENDIXが決めます
               </p>
-              <p className="text-gray-500 text-xs md:text-sm max-w-2xl mx-auto">
-                TRENDIXは、Amazonの価格変動をAIがリアルタイムで分析し、本当に安くなった商品のみを自動で抽出・表示します。
+              <p className="text-sm md:text-base text-gray-600 mb-3 leading-relaxed hero-fade-in-delay-2">
+                値下がりの理由が分かるから、安心して買える
               </p>
-              <div className="mt-4 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-[11px] md:text-xs text-gray-700">
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/80 border border-gray-200">
-                  AIが「本当にお得な値下がり」だけを自動抽出
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/80 border border-gray-200">
-                  過去価格と下落率からデータで買い時を判定
-                </span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/80 border border-gray-200">
-                  価格グラフを見なくても「なぜお得か」が一瞬で分かる
-                </span>
+              <p className="text-xs md:text-sm text-gray-500 leading-relaxed hero-fade-in-delay-2">
+                比較も分析も不要。判断はTRENDIXが代わりにします
+              </p>
+            </div>
+
+            {/* DAISO型：太めの検索バー（ヒーロー直下） */}
+            <div className="w-full max-w-3xl mx-auto mb-8">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="商品名・ブランド名で探す" 
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-full h-12 md:h-14 pl-5 pr-12 bg-white border-2 border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-calm-navy/20 focus:border-calm-navy transition-all shadow-sm hover:shadow-md"
+                  aria-label="商品を検索"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <Search size={20} />
+                </div>
               </div>
             </div>
 
-            {/* 統計カード */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              {/* 監視商品数（信頼性カラー） */}
-              <div className="bg-gradient-to-br from-blue-50/60 to-indigo-50/40 rounded-2xl p-6 border border-blue-100/50 shadow-soft">
-                <div className="text-sm text-trust font-medium mb-2">
-                  監視商品数
-                </div>
-                <div className="text-4xl font-bold text-trust font-sans">
-                  {stats.totalProducts}
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  商品をリアルタイム監視中
-                </div>
+            {/* DAISO型：カテゴリナビ（横スクロール） */}
+            <div className="w-full mb-6">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-4 py-2 text-sm whitespace-nowrap border border-gray-300 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                      selectedCategory === category.id
+                        ? 'bg-calm-navy text-white border-calm-navy shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-calm-blue-gray'
+                    }`}
+                  >
+                    {category.label}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              {/* 本日値下がり件数（価格アンカリング強調） */}
-              <div className="bg-gradient-to-br from-rose-50/60 to-pink-50/40 rounded-2xl p-6 border border-rose-100/50 shadow-soft relative overflow-hidden animate-pulse-slow">
-                <div className="absolute top-2 right-2">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold text-white bg-cta/90 shadow-sm">
-                    🔥 お得
-                  </span>
-                </div>
-                <div className="text-sm text-rose-700 font-medium mb-2">
-                  本日値下がり件数
-                </div>
-                <div className="text-4xl font-bold text-rose-800 font-sans">
-                  {stats.dropsToday}
-                </div>
-                <div className="text-xs text-rose-600 mt-1">
-                  件の商品が値下がり
-                </div>
-              </div>
-
-              {/* 最安値更新件数 */}
-              <div className="bg-gradient-to-br from-amber-50/60 to-yellow-50/40 rounded-2xl p-6 border border-amber-100/50 shadow-soft">
-                <div className="text-sm text-amber-700 font-medium mb-2">
-                  最安値更新件数
-                </div>
-                <div className="text-4xl font-bold text-amber-800 font-sans">
-                  {stats.lowestPriceUpdates}
-                </div>
-                <div className="text-xs text-amber-600 mt-1">
-                  件が過去最安値を更新
-                </div>
+            {/* スクロールヒント（静かな誘導） */}
+            <div className="flex justify-center mt-8 mb-4">
+              <div className="flex flex-col items-center gap-2 text-gray-400">
+                <span className="text-xs">商品を見る</span>
+                <ChevronDown size={20} className="scroll-hint" />
               </div>
             </div>
           </div>
         </section>
 
-        {/* 本日のトレンド（TOP3カルーセル） */}
-        {trendProducts.length > 0 && !debouncedSearchQuery && (
-          <section className="bg-white/90 backdrop-blur-sm border-b border-gray-200/50 py-6 md:py-8 px-4 md:px-6">
-            <div className="container mx-auto max-w-[1920px]">
-              <div className="flex items-center gap-2 mb-4">
-                <Crown className="w-5 h-5 text-yellow-500" />
-                <h2 className="text-lg font-bold text-slate-900">
-                  本日のトレンド
-                </h2>
-              </div>
-              <div className="relative">
-                <div className="overflow-x-auto scrollbar-hide">
-                  <div className="flex gap-4 pb-2">
-                    {trendProducts.map((product, index) => (
-                      <a
-                        key={product.id}
-                        href={product.affiliateUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-shrink-0 w-64 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <Crown size={14} className="text-yellow-500" />
-                          <span className="text-xs font-bold text-purple-600">
-                            No.{index + 1}
-                          </span>
-                        </div>
-                        <div className="text-sm font-bold text-gray-900 line-clamp-2 mb-2">
-                          {product.name}
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-bold text-gray-900">
-                            ¥{product.currentPrice.toLocaleString()}
-                          </span>
-                          {product.priceHistory.length >= 2 && (
-                            <span className="text-xs text-gray-400 line-through">
-                              ¥
-                              {product.priceHistory[
-                                product.priceHistory.length - 2
-                              ].price.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-red-600 font-semibold mt-1">
-                          AI Deal Score: {calculateDealScore(product)}/100
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* トップサマリーバー */}
-        {stats.dropsToday > 0 && (
-          <div className="bg-gradient-to-r from-rose-50/60 to-pink-50/40 border-b border-rose-100/50 py-4 px-4 md:px-6">
-            <div className="container mx-auto max-w-[1920px]">
-              <p className="text-sm text-gray-700 text-center">
-                今日は
-                <strong className="text-rose-700 font-bold font-sans">
-                  {stats.dropsToday}
-                </strong>
-                商品が値下がりしています。
-                {stats.topCategory && stats.topCategoryCount > 0 && (
-                  <span>
-                    {" "}
-                    特に
-                    <strong className="text-rose-800 font-bold">
-                      {categoryLabelMap[stats.topCategory] ||
-                        stats.topCategory}
-                    </strong>
-                    カテゴリが狙い目です。
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* エレガントな区切り */}
-        <div className="border-t border-gray-200/50 my-10 md:my-12"></div>
-
-        {/* タブ切り替えUI */}
-        <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
-          <div className="container mx-auto max-w-[1920px] px-3">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide py-3">
+        {/* DAISO型：タブ切り替えUI */}
+        <div className="bg-gray-50 border-b border-gray-200 sticky top-16 z-40 shadow-sm">
+          <div className="w-full px-4">
+            <div className="flex gap-1 overflow-x-auto scrollbar-hide py-3">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  className={`px-4 py-2 text-sm whitespace-nowrap transition-all border-b-2 ${
                     activeTab === tab.id
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      ? 'text-calm-navy font-medium border-calm-navy'
+                      : 'text-gray-500 border-transparent hover:text-calm-blue-gray'
                   }`}
                 >
-                  {tab.emoji && <span className="mr-1">{tab.emoji}</span>}
                   {tab.label}
                 </button>
               ))}
             </div>
+            {/* STEP 6: 「おすすめ」タブの意味を明示する説明文 */}
+            {activeTab === 'ranking' && (
+              <div className="px-4 pb-3 pt-1">
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  今の価格・値動き・評価を見て、
+                  <br className="md:hidden" />
+                  TRENDIXが「無難」と判断した商品
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 商品グリッド */}
-        <div className="container mx-auto max-w-[1920px] px-4 md:px-6 py-8 md:py-10">
+        {/* DAISO型：商品グリッド */}
+        <div className="w-full px-4 md:px-6 py-8 md:py-10">
           {/* 検索結果・カテゴリフィルター情報 */}
           {(debouncedSearchQuery ||
             (selectedCategory && selectedCategory !== "all")) &&
@@ -753,61 +678,50 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
               </div>
             )}
 
-          {/* シンプルなフィルター＆ソート（スマホ優先レイアウト） */}
+          {/* DAISO型：フィルター＆ソートUI */}
           {!isLoading && !error && (
-            <div className="mb-5 flex flex-col gap-3">
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className="text-gray-500">価格帯:</span>
-                {(["all", "under3k", "3kto10k", "over10k"] as PriceBand[]).map(
-                  (bandKey) => {
-                    const band = PRICE_BANDS[bandKey];
-                    return (
-                      <button
-                        key={bandKey}
-                        type="button"
-                        onClick={() => setPriceBand(bandKey)}
-                        className={`px-2 py-1 rounded-full border text-[11px] ${
-                          priceBand === bandKey
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "bg-white text-gray-700 border-gray-200"
-                        }`}
-                      >
-                        {band.label}
-                      </button>
-                    );
-                  }
-                )}
+            <div className="mb-6 flex flex-wrap items-center gap-3 py-4 border-b border-gray-200">
+              {/* 価格帯フィルター */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">価格帯:</span>
+                <div className="flex gap-1">
+                  {(['all', 'under3k', '3kto10k', 'over10k'] as PriceBand[]).map((band) => (
+                    <button
+                      key={band}
+                      type="button"
+                      onClick={() => setPriceBand(band)}
+                      className={`px-3 py-1 text-sm border border-gray-300 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                        priceBand === band
+                          ? 'bg-calm-navy text-white border-calm-navy shadow-md'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-calm-blue-gray'
+                      }`}
+                    >
+                      {PRICE_BANDS[band].label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">並び替え:</span>
-                  <select
-                    value={sortKey}
-                    onChange={(e) =>
-                      setSortKey(e.target.value as SortKey)
-                    }
-                    className="h-8 px-2 rounded-lg border border-gray-200 bg-white text-xs text-gray-700"
-                  >
-                    <option value="default">おすすめ順</option>
-                    <option value="dealScore">
-                      AI Deal Scoreが高い順
-                    </option>
-                    <option value="discountPercent">
-                      割引率が高い順
-                    </option>
-                    <option value="discountAmount">
-                      値下げ額が大きい順
-                    </option>
-                  </select>
-                </div>
+              {/* 並び替え */}
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm text-gray-600">並び替え:</span>
+                <select
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as SortKey)}
+                  className="h-8 px-3 border border-gray-300 bg-white text-sm text-gray-700 rounded-lg shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-calm-navy/20 focus:border-calm-navy transition-all"
+                >
+                  <option value="default">おすすめ</option>
+                  <option value="dealScore">お得順</option>
+                  <option value="discountPercent">割引率が高い順</option>
+                  <option value="discountAmount">価格が安い順</option>
+                </select>
               </div>
             </div>
           )}
 
           {/* ローディング状態 */}
           {isLoading && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6">
               {[...Array(6)].map((_, index) => (
                 <LoadingSkeleton key={index} />
               ))}
@@ -921,28 +835,20 @@ export default function HomeClient({ initialProducts }: HomeClientProps) {
                 </div>
               ) : (
                 <>
-                  {/* 高密度グリッド表示（垂直カード） */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
-                    {filteredProducts.map((p, index) => {
-                      const categoryCode = p.category || "OTHERS";
-                      const categoryLabel =
-                        categoryLabelMap[categoryCode] ||
-                        categoryCode ||
-                        categoryLabelMap.OTHERS;
-
-                      return (
-                        <ProductCard
-                          key={p.id}
-                          product={p}
-                          isPriority={index < 6}
-                          onAlertClick={handleAlertClick}
-                          onFavoriteToggle={(asin, isFavorite) => {
-                            // お気に入り状態変更時の処理（必要に応じて実装）
-                          }}
-                          categoryLabel={categoryLabel}
-                        />
-                      );
-                    })}
+                  {/* マルチデバイス対応：スマホ1列、タブレット2列、PC3〜4列 */}
+                  <div 
+                    className="grid-responsive grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 md:gap-x-5 lg:gap-x-6 gap-y-6 md:gap-y-7 lg:gap-y-8"
+                  >
+                    {productsWithCategoryLabels.map(({ product: p, categoryLabel }, index) => (
+                      <ProductCard
+                        key={p.id}
+                        product={p}
+                        isPriority={index < 6}
+                        onAlertClick={handleAlertClick}
+                        onFavoriteToggle={handleFavoriteToggle}
+                        categoryLabel={categoryLabel}
+                      />
+                    ))}
                   </div>
                 </>
               )}

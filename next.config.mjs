@@ -7,7 +7,11 @@ const nextConfig = {
   images: {
     // 画像最適化のパフォーマンス設定
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 31536000, // 1年間キャッシュ（画像は変更されないため）
+    // デバイスサイズの最適化（不要なサイズを削減）
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    // 画像サイズの最適化（グリッド表示に最適化）
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // リモート画像のホスト名設定（重複を削除して最適化）
     remotePatterns: [
       {

@@ -258,10 +258,10 @@ export default function Header({ searchQuery: externalSearchQuery, onSearch = no
   return (
     <>
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="w-full px-4 h-16 flex items-center justify-between gap-4">
-          {/* ロゴ */}
+        <div className="w-full px-4 py-3 md:py-4 flex items-center justify-between gap-4">
+          {/* ロゴ - 価格と同系統のネイビー */}
           <Link href={`/${locale}`} className="flex items-center" aria-label="TRENDIX ホームページに移動">
-            <span className="text-2xl font-bold font-serif tracking-tight text-gray-900">
+            <span className="text-2xl font-bold font-serif tracking-tight text-calm-navy">
               TRENDIX
             </span>
           </Link>

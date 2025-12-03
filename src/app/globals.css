@@ -5,8 +5,8 @@
 body {
   @apply text-text-main antialiased font-serif;
   line-height: 1.7;
-  /* DAISO型：白 or 薄いグレー背景 */
-  background-color: #ffffff;
+  /* グレー背景で見やすく */
+  background-color: #f5f5f5;
   min-height: 100vh;
   position: relative;
 }
@@ -48,10 +48,10 @@ section {
   line-height: 1.75;
 }
 
-/* なめらかなスクロール */
-html {
+/* なめらかなスクロール（パフォーマンス向上のため無効化） */
+/* html {
   scroll-behavior: smooth;
-}
+} */
 
 /* スクロールバーを非表示（横スクロール用） */
 .scrollbar-hide {
@@ -67,12 +67,30 @@ html {
 .grid-responsive {
   contain: layout style paint;
   will-change: contents;
+  content-visibility: auto;
+  /* GPU加速を有効化 */
+  transform: translateZ(0);
+  /* レイアウトシフトを防ぐ */
+  min-height: 0;
+  /* リサイズ時の再計算を高速化 */
+  grid-auto-flow: row;
+  /* グリッドの再計算を最適化 */
+  align-items: start;
 }
 
 /* グリッドアイテムのレンダリング最適化 */
 .grid-responsive > * {
   contain: layout style paint;
   transform: translateZ(0); /* GPU加速を有効化 */
+  will-change: transform;
+  /* レイアウト計算を最適化 */
+  min-width: 0;
+  min-height: 0;
+  /* リサイズ時の再計算を防ぐ */
+  flex-shrink: 0;
+  /* GPU加速を強化 */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ファーストビューのフェードインアニメーション */
