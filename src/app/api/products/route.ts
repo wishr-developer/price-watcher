@@ -4,7 +4,24 @@ import path from "path";
 import { Product } from "@/types/product";
 
 /**
+ * メモリキャッシュ（サーバー再起動まで有効）
+ * ファイルの変更時刻とパース済みデータを保持
+ */
+interface CacheEntry {
+  products: Product[];
+  mtime: number; // ファイルの最終更新時刻（ミリ秒）
+  timestamp: number; // キャッシュ作成時刻（ミリ秒）
+}
+
+// グローバル変数としてキャッシュを保持（Next.jsのサーバーインスタンス間で共有）
+declare global {
+  // eslint-disable-next-line no-var
+  var __productsCache: CacheEntry | undefined;
+}
+
+/**
  * 商品データを取得するAPI
+ * メモリキャッシュ + ファイル変更検知で高速化
  * キャッシュ設定: 60秒間はCDNにキャッシュし、その後5分間は古いデータを見せながら再検証
  */
 export async function GET() {
@@ -25,6 +42,26 @@ export async function GET() {
       );
     }
 
+    // ファイルの変更時刻を取得
+    const stats = fs.statSync(filePath);
+    const currentMtime = stats.mtimeMs;
+
+    // キャッシュが存在し、ファイルが変更されていない場合はキャッシュを返す
+    const cache = global.__productsCache;
+    if (cache && cache.mtime === currentMtime) {
+      // キャッシュヒット（ログは本番環境では出力しない）
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[API] メモリキャッシュから商品データを返却');
+      }
+      return NextResponse.json(cache.products, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          'X-Cache': 'HIT',
+        },
+      });
+    }
+
+    // ファイルを読み込んでパース
     const fileContents = fs.readFileSync(filePath, "utf8");
     
     // JSONのパースエラーハンドリング
@@ -44,10 +81,22 @@ export async function GET() {
       );
     }
 
+    // キャッシュを更新
+    global.__productsCache = {
+      products,
+      mtime: currentMtime,
+      timestamp: Date.now(),
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[API] 商品データを読み込み、キャッシュを更新');
+    }
+
     // 成功レスポンス（キャッシュヘッダー付き）
     return NextResponse.json(products, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'X-Cache': 'MISS',
       },
     });
   } catch (error) {

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import dynamic from 'next/dynamic';
 import { Bell, ExternalLink, Heart, Star, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Product } from '@/types/product';
 import DealScoreBadge from './DealScoreBadge';
-import ProductCardChart from './ProductCardChart';
+const ProductCardChart = dynamic(() => import('./ProductCardChart'), {
+  ssr: false,
+  loading: () => <div className="h-16 md:h-20 w-full bg-gray-50" />,
+});
 import { calculateDealScore } from '@/lib/dealScore';
 
 interface ProductCardProps {
@@ -124,7 +127,7 @@ function isLowestPriceInRecentDays(product: Product, days: number): boolean {
 }
 
 
-export default function ProductCard({
+function ProductCard({
   product,
   onAlertClick,
   onFavoriteToggle,
@@ -362,7 +365,7 @@ export default function ProductCard({
             </div>
           )}
 
-          {history.length > 0 && (
+          {history.length > 0 && isPriority && (
             <div className="space-y-1">
               <div className="flex gap-1">
                 {(['7D', '30D', 'ALL'] as PeriodType[]).map((period) => (
@@ -420,3 +423,19 @@ export default function ProductCard({
     </a>
   );
 }
+
+// React.memoでラップして、propsが変更されない限り再レンダリングを防止
+// カスタム比較関数: trueを返すと再レンダリングをスキップ、falseを返すと再レンダリング
+const areEqual = (prevProps: ProductCardProps, nextProps: ProductCardProps) => {
+  // 商品IDが同じで、その他の重要なpropsが変更されていない場合は再レンダリングをスキップ
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.currentPrice === nextProps.product.currentPrice &&
+    prevProps.isPriority === nextProps.isPriority &&
+    prevProps.categoryLabel === nextProps.categoryLabel &&
+    prevProps.product.priceHistory?.length === nextProps.product.priceHistory?.length &&
+    JSON.stringify(prevProps.product.priceHistory) === JSON.stringify(nextProps.product.priceHistory)
+  );
+};
+
+export default memo(ProductCard, areEqual);
