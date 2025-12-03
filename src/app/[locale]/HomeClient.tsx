@@ -36,12 +36,15 @@ const PRICE_BANDS: Record<
 const categoryLabelMap = categoryLabelsJson as Record<string, string>;
 
 // ヒーローセクション用の背景画像リスト（フランス/イタリアの街並み）
+// ヒーロー背景画像（現在は使用していない）
+/*
 const heroBackgroundImages = [
   "/images/paris_street_blurred.jpg",
   "/images/street1.jpg",
   "/images/street2.jpg",
   "/images/street3.jpg",
 ];
+*/
 
 interface HomeClientProps {
   initialProducts: Product[];
@@ -75,9 +78,6 @@ export default function HomeClient({ initialProducts, isLoading: externalIsLoadi
   const [priceBand, setPriceBand] = useState<PriceBand>("all");
   const [sortKey, setSortKey] = useState<SortKey>("default");
 
-  // ヒーロー背景画像の状態管理
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFading, setIsFading] = useState(false);
 
   // 検索クエリの変更をハンドル（useCallbackでメモ化）
   const handleSearch = useCallback((query: string) => {
@@ -105,22 +105,6 @@ export default function HomeClient({ initialProducts, isLoading: externalIsLoadi
     []
   );
 
-  // ヒーロー背景画像の自動切り替え（30秒ごと）
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsFading(true);
-
-      // フェードアウト完了後に画像を切り替え
-      setTimeout(() => {
-        setCurrentImageIndex(
-          (prevIndex) => (prevIndex + 1) % heroBackgroundImages.length
-        );
-        setIsFading(false);
-      }, 500); // フェードアウトの時間（500ms）
-    }, 30000); // 30秒ごとに切り替え
-
-    return () => clearInterval(interval);
-  }, []);
 
   // 重複防止（ASINベースでフィルタリング）
   const uniqueProducts = useMemo(() => {
@@ -858,7 +842,7 @@ export default function HomeClient({ initialProducts, isLoading: externalIsLoadi
                       <ProductCard
                         key={p.id}
                         product={p}
-                        isPriority={index < 6}
+                        isPriority={index < 12}
                         onAlertClick={handleAlertClick}
                         onFavoriteToggle={handleFavoriteToggle}
                         categoryLabel={categoryLabel}

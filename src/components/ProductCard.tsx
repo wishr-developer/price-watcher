@@ -276,6 +276,7 @@ function ProductCard({
 }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   // ============================================
   // 価格表示の信頼性確保（設計ルール固定）
@@ -431,7 +432,10 @@ function ProductCard({
       localStorage.setItem(key, JSON.stringify(updated));
     } catch (error) {
       // localStorageエラーは無視（プライベートモードなど）
-      console.error('Failed to save recent products:', error);
+      // 開発環境のみエラーログを出力
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to save recent products:', error);
+      }
     }
   };
 
@@ -469,15 +473,23 @@ function ProductCard({
             src={product.imageUrl}
             alt={product.name}
             fill
-            className="object-contain mix-blend-multiply p-3"
+            className="object-contain mix-blend-multiply p-3 transition-opacity duration-300"
+            style={{ opacity: imageLoaded ? 1 : 0 }}
             priority={isPriority}
             loading={isPriority ? undefined : 'lazy'}
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-            quality={85}
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+            quality={90}
             placeholder="blur"
             blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PC9zdmc+"
-            onError={() => setImageError(true)}
+            onLoad={() => {
+              setImageLoaded(true);
+            }}
+            onError={() => {
+              setImageError(true);
+              setImageLoaded(false);
+            }}
             aria-hidden="false"
+            unoptimized={false}
           />
         )}
         {/* STEP 6: おすすめラベル（商品画像の左下） - 質感統一 */}
