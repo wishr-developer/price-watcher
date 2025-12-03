@@ -56,7 +56,7 @@ function getAveragePriceInDays(product: Product, days: number): number | null {
   return sum / target.length;
 }
 
-/** DAISO型：「なぜお得か」を1行で説明するテキストを生成（客観データのみ、煽り文言禁止） */
+/** DAISO型：「なぜお得か」を控えめなトーンで表示（そっと背中を押す） */
 function getDealReason(product: Product): string | null {
   const history = product.priceHistory || [];
   if (history.length < 2) return null;
@@ -75,7 +75,7 @@ function getDealReason(product: Product): string | null {
 
     // 平均より一定以上安い場合のみ表示
     if (discountPercentFromAvg >= DEAL_REASON_CONFIG.minAvgDiscountPercent) {
-      return `過去30日平均との差：-¥${Math.round(diffFromAvg).toLocaleString()}（約${discountPercentFromAvg}%）`;
+      return `最近では安い価格です`;
     }
   }
 
@@ -86,7 +86,7 @@ function getDealReason(product: Product): string | null {
 
     // 直近からの値下がりが一定以上なら説明を表示
     if (discountPercentFromPrev >= DEAL_REASON_CONFIG.minPrevDiscountPercent) {
-      return `直近価格より -¥${Math.abs(diffFromPrev).toLocaleString()}（約${discountPercentFromPrev}%）`;
+      return `直近で値下がりしました`;
     }
   }
 

@@ -603,47 +603,57 @@ export default function Home() {
       )}
       <div className="pb-16 min-h-screen bg-white">
         {/* DAISO型：ヒーローセクション */}
-        <section className="bg-white border-b border-gray-200 py-8 md:py-12 px-4">
-          <div className="container mx-auto max-w-6xl">
+        <section className="bg-white border-b border-gray-200 py-6 md:py-8 px-4">
+          <div className="w-full">
             {/* メインメッセージ */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-normal text-gray-900 mb-3 leading-tight">
+            <div className="text-center mb-6">
+              <h1 className="text-2xl md:text-3xl font-normal text-gray-900 mb-2 leading-tight">
                 買い時の商品が、ひと目でわかる
               </h1>
-              <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
-                Amazonの価格変動をAIが監視し、本当に下がった商品だけを表示
-              </p>
             </div>
 
-            {/* DAISO型：数字ブロック（3カラム横並び） */}
-            {!isLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                {/* 監視商品数 */}
-                <div className="bg-white border border-gray-300 rounded p-6 text-center">
-                  <div className="text-sm text-gray-600 mb-2">監視商品数</div>
-                  <div className="text-3xl font-normal text-gray-900 font-sans">{stats.totalProducts}</div>
-                </div>
-
-                {/* 本日値下がり件数 */}
-                <div className="bg-white border border-gray-300 rounded p-6 text-center">
-                  <div className="text-sm text-gray-600 mb-2">本日値下がり件数</div>
-                  <div className="text-3xl font-normal text-gray-900 font-sans">{stats.dropsToday}</div>
-                </div>
-
-                {/* 最安値更新件数 */}
-                <div className="bg-white border border-gray-300 rounded p-6 text-center">
-                  <div className="text-sm text-gray-600 mb-2">最安値更新件数</div>
-                  <div className="text-3xl font-normal text-gray-900 font-sans">{stats.lowestPriceUpdates}</div>
+            {/* DAISO型：太めの検索バー（ヒーロー直下） */}
+            <div className="w-full max-w-3xl mx-auto mb-6">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="商品名・ブランド名で探す" 
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="w-full h-12 md:h-14 pl-5 pr-12 bg-white border-2 border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
+                  aria-label="商品を検索"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <Search size={20} />
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* DAISO型：カテゴリナビ（横スクロール） */}
+            <div className="w-full mb-6">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-4 py-2 text-sm whitespace-nowrap border border-gray-300 rounded-md transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-gray-900 text-white border-gray-900'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {category.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
 
         {/* DAISO型：タブ切り替えUI */}
         <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
-          <div className="container mx-auto max-w-6xl px-4">
+          <div className="w-full px-4">
             <div className="flex gap-1 overflow-x-auto scrollbar-hide py-3">
               {tabs.map((tab) => (
                 <button
@@ -663,7 +673,7 @@ export default function Home() {
         </div>
 
         {/* DAISO型：商品グリッド */}
-        <div className="container mx-auto max-w-6xl px-4 md:px-6 py-8 md:py-10">
+        <div className="w-full px-4 md:px-6 py-8 md:py-10">
           {/* 検索結果・カテゴリフィルター情報 */}
           {(debouncedSearchQuery || (selectedCategory && selectedCategory !== 'all')) && !isLoading && !error && (
             <div className="mb-6">
@@ -720,10 +730,10 @@ export default function Home() {
                   onChange={(e) => setSortKey(e.target.value as SortKey)}
                   className="h-8 px-3 border border-gray-300 bg-white text-sm text-gray-700 rounded"
                 >
-                  <option value="default">おすすめ順</option>
-                  <option value="dealScore">AI Deal Scoreが高い順</option>
+                  <option value="default">おすすめ</option>
+                  <option value="dealScore">お得順</option>
                   <option value="discountPercent">割引率が高い順</option>
-                  <option value="discountAmount">値下げ額が大きい順</option>
+                  <option value="discountAmount">価格が安い順</option>
                 </select>
               </div>
             </div>
@@ -741,7 +751,7 @@ export default function Home() {
           {/* エラー状態 */}
           {error && !isLoading && (
             <div className="text-center py-16">
-              <div className="max-w-md mx-auto">
+              <div className="w-full">
                 <div className="flex justify-center mb-4">
                   <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
                     <AlertCircle className="w-8 h-8 text-red-600" />
@@ -765,7 +775,7 @@ export default function Home() {
             <>
               {filteredProducts.length === 0 ? (
                 <div className="text-center py-20 px-4">
-                  <div className="max-w-md mx-auto">
+                  <div className="w-full">
                     {/* アイコン */}
                     <div className="flex justify-center mb-6">
                       <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">

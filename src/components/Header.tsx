@@ -258,7 +258,7 @@ export default function Header({ searchQuery: externalSearchQuery, onSearch = no
   return (
     <>
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        <div className="w-full px-4 h-16 flex items-center justify-between gap-4">
           {/* ロゴ */}
           <Link href={`/${locale}`} className="flex items-center" aria-label="TRENDIX ホームページに移動">
             <span className="text-2xl font-bold font-serif tracking-tight text-gray-900">
@@ -266,18 +266,18 @@ export default function Header({ searchQuery: externalSearchQuery, onSearch = no
             </span>
           </Link>
 
-          {/* DAISO型：幅広の検索バー（中央） */}
-          <div className="hidden md:flex flex-1 max-w-2xl mx-8 relative">
+          {/* ヘッダー検索バーは最小限に（メイン検索はヒーロー直下に配置） */}
+          <div className="hidden md:flex flex-1 relative">
             <input 
               type="text" 
-              placeholder="商品名・ブランド名で検索" 
+              placeholder="商品名・ブランド名で探す" 
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full h-10 pl-4 pr-10 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+              className="w-full h-9 pl-3 pr-9 bg-gray-50 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
               aria-label="商品を検索"
             />
-            <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-              <Search size={18} />
+            <div className="absolute right-2.5 top-2 text-gray-400 pointer-events-none">
+              <Search size={16} />
             </div>
           </div>
 
@@ -340,10 +340,10 @@ export default function Header({ searchQuery: externalSearchQuery, onSearch = no
                   ref={searchInputRef}
                   id="mobile-search-input"
                   type="text" 
-                  placeholder="商品名・ブランド名で検索" 
+                  placeholder="商品名・ブランド名で探す" 
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className="w-full h-12 pl-4 pr-12 bg-gray-50 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                  className="w-full h-12 pl-4 pr-12 bg-white border-2 border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400"
                   aria-label="商品を検索"
                 />
                 <div className="absolute right-3 top-3 text-gray-400 pointer-events-none">
