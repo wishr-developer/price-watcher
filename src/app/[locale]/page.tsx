@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import ProductCard from '@/components/ProductCard';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
@@ -436,6 +436,19 @@ export default function Home() {
     return finalResult;
   }, [uniqueProducts, debouncedSearchQuery, activeTab, selectedCategory, priceBand, sortKey]);
 
+  // カテゴリラベルの事前計算（メモ化）で再レンダリング時の計算を削減
+  const productsWithCategoryLabels = useMemo(() => {
+    return filteredProducts.map((p) => {
+      const categoryCode = p.category || 'OTHERS';
+      const categoryLabel =
+        categoryLabelMap[categoryCode] || categoryCode || categoryLabelMap.OTHERS;
+      return {
+        product: p,
+        categoryLabel,
+      };
+    });
+  }, [filteredProducts]);
+
   // お気に入り商品を取得
   const favoriteProducts = useMemo(() => {
     if (typeof window === 'undefined') return [];
@@ -469,15 +482,21 @@ export default function Home() {
     { id: 'all', label: 'すべて', emoji: '' },
   ];
 
-  const handleAlertClick = (product: Product) => {
+  // useCallbackでメモ化して再レンダリングを防止
+  const handleAlertClick = useCallback((product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedProduct(null);
-  };
+  }, []);
+
+  // お気に入りトグルハンドラもメモ化
+  const handleFavoriteToggle = useCallback((asin: string, isFavorite: boolean) => {
+    // お気に入り状態変更時の処理（必要に応じて実装）
+  }, []);
 
   // 構造化データ（JSON-LD）の生成（表示中の商品のみに限定）
   const structuredData = useMemo(() => {
@@ -978,26 +997,20 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  {/* 高密度グリッド表示（垂直カード） */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6">
-                    {filteredProducts.map((p, index) => {
-                      const categoryCode = p.category || 'OTHERS';
-                      const categoryLabel =
-                        categoryLabelMap[categoryCode] || categoryCode || categoryLabelMap.OTHERS;
-
-                      return (
-                        <ProductCard
-                          key={p.id}
-                          product={p}
-                          isPriority={index < 6}
-                          onAlertClick={handleAlertClick}
-                          onFavoriteToggle={(asin, isFavorite) => {
-                            // お気に入り状態変更時の処理（必要に応じて実装）
-                          }}
-                          categoryLabel={categoryLabel}
-                        />
-                      );
-                    })}
+                  {/* 高密度グリッド表示（垂直カード） - CSS最適化でレイアウト変更を高速化 */}
+                  <div 
+                    className="grid-responsive grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6"
+                  >
+                    {productsWithCategoryLabels.map(({ product: p, categoryLabel }, index) => (
+                      <ProductCard
+                        key={p.id}
+                        product={p}
+                        isPriority={index < 6}
+                        onAlertClick={handleAlertClick}
+                        onFavoriteToggle={handleFavoriteToggle}
+                        categoryLabel={categoryLabel}
+                      />
+                    ))}
                   </div>
                 </>
               )}

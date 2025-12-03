@@ -84,3 +84,15 @@ html {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* レスポンシブレイアウト変更の高速化 */
+.grid-responsive {
+  contain: layout style paint;
+  will-change: contents;
+}
+
+/* グリッドアイテムのレンダリング最適化 */
+.grid-responsive > * {
+  contain: layout style paint;
+  transform: translateZ(0); /* GPU加速を有効化 */
+}
